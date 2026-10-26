@@ -619,6 +619,7 @@ body.show-hints p.hint, body.show-hints .hint-long{display:block;}
       <div class="pr-bottom">
         <button class="btn ghost sm" id="btn-toggle-hints" type="button" style="width:100%;">💡 Hiện ghi chú</button>
         <div class="status" id="dbstatus"><span class="led off"></span>Đang kết nối lưu trữ…</div>
+        <div class="row" id="dbtools" style="gap:6px;margin-top:6px;flex-wrap:wrap;"><button class="btn ghost sm" id="btn-sao-luu" type="button" title="Tải file sao lưu toàn bộ hồ sơ/kho/thực đơn">⬇ Sao lưu</button><button class="btn ghost sm" id="btn-khoi-phuc" type="button" title="Nạp lại từ file sao lưu (.json)">⬆ Khôi phục</button><button class="btn ghost sm" id="btn-dang-xuat" type="button" hidden>Đăng xuất</button><input type="file" id="file-khoi-phuc" accept=".json,application/json" hidden></div>
       </div>
     </aside>
     <main class="main">
@@ -2736,16 +2737,148 @@ const state = {
   thucdon: [], // {id, benhnhan_id, tuan_bat_dau, nguoi_lap, so_ngay, days:[...]}
 };
 
+/* V290: tải file — trong claude.ai dùng "downloads" của Claude; ngoài web thường (GitHub Pages…) tự tải bằng trình duyệt */
+async function dlGet(){
+  try{ if(typeof window!=="undefined" && window.claude){ const d=await window.claude.use("downloads"); if(d) return d; } }catch(e){}
+  return {save: async ({filename,data})=>{
+    const blob = (data instanceof Blob) ? data : new Blob([data]);
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+  }};
+}
+/* ============================================================
+   V291: LƯU TRỮ CHUNG (Supabase) — dùng khi chạy ngoài claude.ai (GitHub Pages…). Trong claude.ai vẫn dùng "db" của Claude.
+   Đăng nhập bằng email/mật khẩu do quản trị tạo trong Supabase; dữ liệu nằm trong bảng app_docs (khóa theo đăng nhập).
+   ============================================================ */
+const SUPA = {url:"https://evkiklfkbudrdpffafku.supabase.co", key:"sb_publishable_l0dLOSKR67lN05TJxfLuXQ_TNyR_dbF"};
+const SUPA_LS = "tctd_supa_session";
+let supaSess = null, SUPA_MODE = false;
+function supaLoadSess(){ try{ return JSON.parse(localStorage.getItem(SUPA_LS)||"null"); }catch(e){ return null; } }
+function supaSaveSess(x){ supaSess = x; try{ if(x) localStorage.setItem(SUPA_LS, JSON.stringify(x)); else localStorage.removeItem(SUPA_LS); }catch(e){} }
+async function supaAuth(grant, body){
+  const r = await fetch(SUPA.url+"/auth/v1/token?grant_type="+grant, {method:"POST", headers:{apikey:SUPA.key,"Content-Type":"application/json"}, body:JSON.stringify(body)});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok){
+    const m = String(j.error_description||j.msg||j.message||"");
+    throw new Error(/invalid login/i.test(m) ? "Sai email hoặc mật khẩu." : (m||("Không đăng nhập được ("+r.status+")")));
+  }
+  return {access_token:j.access_token, refresh_token:j.refresh_token, expires_at:Math.floor(Date.now()/1000)+(j.expires_in||3600), email:(j.user&&j.user.email)||""};
+}
+async function supaToken(){
+  if(!supaSess) throw new Error("Chưa đăng nhập.");
+  if(supaSess.expires_at-60 < Date.now()/1000){
+    try{ supaSaveSess(await supaAuth("refresh_token",{refresh_token:supaSess.refresh_token})); }
+    catch(e){ supaSaveSess(null); throw new Error("Phiên đăng nhập đã hết hạn — hãy tải lại trang để đăng nhập lại."); }
+  }
+  return supaSess.access_token;
+}
+async function supaFetch(path, opts){
+  opts = opts||{};
+  const tk = await supaToken();
+  const r = await fetch(SUPA.url+"/rest/v1/"+path, {...opts, headers:{apikey:SUPA.key, Authorization:"Bearer "+tk, "Content-Type":"application/json", ...(opts.headers||{})}});
+  if(r.status===401||r.status===403){ throw new Error("Không có quyền ghi/đọc kho chung (đã đăng nhập chưa?)."); }
+  if(!r.ok){ throw new Error("Lỗi kho chung "+r.status+": "+(await r.text()).slice(0,160)); }
+  return r;
+}
+function supaDb(){
+  const UP = "app_docs?on_conflict=collection,id", PF = {Prefer:"resolution=merge-duplicates,return=minimal"};
+  return {collection:c=>({
+    get: async()=>{
+      const docs=[];
+      for(let from=0;;from+=1000){
+        const r = await supaFetch("app_docs?select=id,data&collection=eq."+encodeURIComponent(c)+"&order=id", {headers:{Range:from+"-"+(from+999),"Range-Unit":"items"}});
+        const rows = await r.json(); rows.forEach(x=>docs.push({id:x.id, data:()=>x.data}));
+        if(rows.length<1000) break;
+      }
+      return {docs};
+    },
+    doc: id=>({
+      set: async data=>{ await supaFetch(UP,{method:"POST",headers:PF,body:JSON.stringify({collection:c,id:String(id),data})}); },
+      delete: async()=>{ await supaFetch("app_docs?collection=eq."+encodeURIComponent(c)+"&id=eq."+encodeURIComponent(id),{method:"DELETE"}); }
+    }),
+    batchSet: async items=>{
+      for(let i=0;i<items.length;i+=100){
+        const chunk = items.slice(i,i+100).map(it=>{ const {id,...rest}=it; return {collection:c,id:String(id),data:rest}; });
+        await supaFetch(UP,{method:"POST",headers:PF,body:JSON.stringify(chunk)});
+      }
+    }
+  })};
+}
+function supaLoginUi(){
+  return new Promise(resolve=>{
+    const box = document.createElement("div");
+    box.id = "supa-login";
+    box.style.cssText = "position:fixed;inset:0;z-index:9999;background:var(--bg,#f4f1ea);display:flex;align-items:center;justify-content:center;padding:16px;";
+    box.innerHTML = `<form style="width:min(360px,100%);background:var(--surface,#fff);border:1px solid var(--border,#ddd);border-radius:14px;padding:26px 24px;box-shadow:0 8px 30px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:12px;">
+      <div style="font-size:20px;font-weight:700;color:var(--ink,#222);">Tiết Chế Thực Đơn</div>
+      <div style="font-size:13px;color:var(--ink-soft,#666);margin-top:-6px;">Đăng nhập để dùng kho dữ liệu chung</div>
+      <label style="font-size:13px;font-weight:600;">Email<input id="supa-email" type="email" autocomplete="username" required style="width:100%;margin-top:4px;"></label>
+      <label style="font-size:13px;font-weight:600;">Mật khẩu<input id="supa-pass" type="password" autocomplete="current-password" required style="width:100%;margin-top:4px;"></label>
+      <div id="supa-err" style="color:var(--danger,#a5332b);font-size:13px;min-height:16px;"></div>
+      <button class="btn" type="submit" id="supa-go">Đăng nhập</button></form>`;
+    document.body.appendChild(box);
+    const f = box.querySelector("form"), err = box.querySelector("#supa-err"), go = box.querySelector("#supa-go");
+    f.addEventListener("submit", async e=>{
+      e.preventDefault(); err.textContent=""; go.disabled=true; go.textContent="Đang đăng nhập…";
+      try{
+        supaSaveSess(await supaAuth("password",{email:box.querySelector("#supa-email").value.trim(), password:box.querySelector("#supa-pass").value}));
+        box.remove(); resolve();
+      }catch(ex){ err.textContent = ex.message||"Không đăng nhập được."; go.disabled=false; go.textContent="Đăng nhập"; }
+    });
+    setTimeout(()=>box.querySelector("#supa-email")?.focus(),50);
+  });
+}
+async function supaStart(){
+  supaSess = supaLoadSess();
+  if(supaSess){ try{ await supaToken(); }catch(e){ supaSess=null; } }
+  if(!supaSess) await supaLoginUi();
+  SUPA_MODE = true;
+  return supaDb();
+}
+async function persistMany(name, list){
+  if(!DB || !list.length) return;
+  try{
+    if(DB.collection(name).batchSet) await DB.collection(name).batchSet(list);
+    else for(const rec of list) await persistOne(name, rec);
+  }catch(e){ console.error(e); banner("Chưa lưu được lên kho chung: "+esc(e.message||e),"danger"); }
+}
+/* Sao lưu / khôi phục (chuyển dữ liệu từ bản claude.ai sang web, hoặc lưu dự phòng) */
+async function saoLuuDuLieu(){
+  const pick = (arr,pre)=>(arr||[]).filter(x=>!(pre&&String(x.id).startsWith(pre)));
+  const data = {app:"tiet-che-thuc-don", version:1, exportedAt:new Date().toISOString(),
+    benhnhan:state.benhnhan||[], thucpham:pick(state.thucpham,"nin_"), mon:pick(state.mon,"mc_"), thucdon:state.thucdon||[]};
+  const dl = await dlGet();
+  await dl.save({filename:"Sao_luu_Tiet_Che_Thuc_Don_"+new Date().toISOString().slice(0,10)+".json", data:new Blob([JSON.stringify(data)],{type:"application/json"})});
+  banner("Đã tải file sao lưu: "+data.benhnhan.length+" hồ sơ, "+data.thucpham.length+" thực phẩm, "+data.mon.length+" món, "+data.thucdon.length+" thực đơn.","info");
+}
+async function khoiPhucDuLieu(file){
+  let j; try{ j = JSON.parse(await file.text()); }catch(e){ banner("File không đọc được (phải là file .json do nút Sao lưu tạo ra).","danger"); return; }
+  if(!j || j.app!=="tiet-che-thuc-don"){ banner("Đây không phải file sao lưu của Tiết Chế Thực Đơn.","danger"); return; }
+  let n=0;
+  for(const name of ["thucpham","mon","benhnhan","thucdon"]){
+    const list = Array.isArray(j[name]) ? j[name].filter(x=>x&&x.id) : [];
+    if(!list.length) continue;
+    const have = new Map((state[name]||[]).map((x,i)=>[x.id,i]));
+    list.forEach(it=>{ if(have.has(it.id)) state[name][have.get(it.id)] = it; else (state[name]=state[name]||[]).push(it); });
+    await persistMany(name, list); n += list.length;
+  }
+  state.benhnhan.forEach(chuanHoaBoSung);
+  render();
+  banner("Đã khôi phục "+n+" mục từ file sao lưu"+(DB?" và lưu vào kho dữ liệu.":" (chưa có kho lưu trữ nên chỉ tồn tại trong phiên này)."),"info");
+}
 async function initDb(){
   try{
     DB = window.claude ? await window.claude.use("db") : null;
   }catch(e){ DB=null; }
+  if(!DB && SUPA.url){ try{ DB = await supaStart(); }catch(e){ console.error(e); DB=null; } }   // V291: ngoài claude.ai → kho chung Supabase
   const led = document.querySelector("#dbstatus .led");
   const label = document.querySelector("#dbstatus");
+  const lo = document.getElementById("btn-dang-xuat"); if(lo) lo.hidden = !SUPA_MODE;
   if(DB){
     USING_DB = true;
     led.classList.remove("off");
-    label.lastChild.textContent = " Lưu trữ bền vững đang bật";
+    label.lastChild.textContent = SUPA_MODE ? (" Kho dữ liệu chung — "+(supaSess&&supaSess.email||"")) : " Lưu trữ bền vững đang bật";
     await loadFromDb();
     render();
   } else {
@@ -2813,13 +2946,13 @@ async function reconcileCollection(name, seedList, snap){
     }
   }
   Object.values(persisted).forEach(rec=>result.push(rec)); // bản ghi người dùng tự thêm, không có trong seed
-  for(const rec of toWrite){ await persistOne(name, rec); }
+  await persistMany(name, toWrite);
   return result;
 }
 async function persistOne(collection, item){
   if(!DB) return;
   const {id, ...rest} = item;
-  try{ await DB.collection(collection).doc(id).set(rest); }catch(e){ console.error(e); }
+  try{ await DB.collection(collection).doc(id).set(rest); }catch(e){ console.error(e); if(SUPA_MODE) banner("Chưa lưu được lên kho chung: "+esc(e.message||e),"danger"); }
 }
 
 /* ============================================================
@@ -2944,7 +3077,7 @@ async function exportExcel(benhnhan, days, tuanBatDau, nguoiLap){
   const blob = new Blob([wbout], {type:"application/octet-stream"});
   const fname = `${benhnhan.ten.replace(/\s+/g,"_")}_thuc_don.xlsx`;
   try{
-    const dl = await claude.use("downloads");
+    const dl = await dlGet();
     if(dl){ await dl.save({filename:fname, data:blob}); return; }
   }catch(e){}
   banner("Không thể lưu file trong môi trường này.","danger");
@@ -4052,7 +4185,7 @@ async function nxaCopy(which){
   await nxaCopyBlob(blob);
 }
 async function nxaPdf(){
-  const dl = await claude.use("downloads");
+  const dl = await dlGet();
   if(!dl) throw new Error("môi trường này không hỗ trợ tải file");
   const m = lastMau||{}; const nm = String((m.data&&m.data.ten)||"benh_nhan").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
   const pdf = new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait",compress:true});
@@ -4064,7 +4197,7 @@ async function nxaPdf(){
   await dl.save({filename:`Thuc_don_mau_${(m.mode||"st").toUpperCase()}_${nm}.pdf`, data:pdf.output("blob")});
 }
 async function nxaDownload(which){
-  const dl = await claude.use("downloads");
+  const dl = await dlGet();
   if(!dl) throw new Error("môi trường này không hỗ trợ tải file");
   const m = lastMau||{}; const nm = String((m.data&&m.data.ten)||"benh_nhan").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
   const pages = which==="all" ? [1,2] : [Number(which)];
@@ -4100,18 +4233,25 @@ function nxaWireEdit(){
 }
 
 /* ---------- giao diện: kết quả + tải ảnh ---------- */
+function bn_of(m){ return state.benhnhan.find(b=>b.id===m.bn); }
 function renderMauResult(){
   const m = lastMau; if(!m) return "";
   if(m.data.error) return `<div class="banner danger" style="margin-top:12px;">${esc(m.data.error)}</div>`;
-  const mode = m.mode||"st", pd = m.data.phu, po = m.phuOff||{};
-  const tg = (k,ten,on)=>`<label style="display:inline-flex;align-items:center;gap:5px;${on?"":"opacity:.55;"}"><input type="checkbox" data-mau-phu="${k}" ${on&&!po[k]?"checked":""} ${on?"":"disabled"}> ${ten}${on?"":" (0 đơn vị)"}</label>`;
-  const phuTogg = `<div class="row" style="gap:14px;flex-wrap:wrap;align-items:center;"><b style="font-size:13px;">Bữa phụ gồm:</b>${tg("khoai","Khoai",!!(pd.khoai[0]&&pd.khoai[0][1]>0))}${tg("tc","Trái cây",pd.tc>0)}${tg("hat","Hạt",pd.hat>0)}<span class="hint" style="margin:0;">Bỏ chọn nếu người bệnh không dùng; mục đó biến mất khỏi thực đơn.</span></div>`;
-  const suaSel = (()=>{ const cur = m.suaId || (mode==="st"?"yt_nepro_1":"gen");
-    const prods = state.thucpham.filter(t=>t.nhom==="san_pham_dinh_duong" && t.cach_pha).sort((a,b)=>a.ten.localeCompare(b.ten,"vi"));
-    return `<div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;"><b style="font-size:13px;">Sữa trong bữa phụ:</b>
-      <select id="mau-sua" style="max-width:100%;"><option value="none" ${cur==="none"?"selected":""}>Không dùng sữa</option><option value="gen" ${cur==="gen"?"selected":""}>Sữa chua/sữa tươi thường (dùng trực tiếp)</option>
-      <optgroup label="Sữa dinh dưỡng y tế (có công thức pha)">${prods.map(t=>`<option value="${esc(t.id)}" ${cur===t.id?"selected":""}>${esc(t.ten)}</option>`).join("")}</optgroup></select>
-      </div>`; })();
+  const mode = m.mode||"st", pd = m.data.phu, po = {};   // V289: cữ phụ do KẾ HOẠCH (hồ sơ) quyết định — thực đơn mẫu chỉ báo cáo lại, không chỉnh ở đây
+  const f1v = x => String(Math.round(x*100)/100).replace(".",",");
+  const phuList = (()=>{ const L=[];
+    if(m.data.phuDv>0 && pd.khoai[0] && pd.khoai[0][1]>0) L.push(["Khoai/bắp luộc", f1v(m.data.phuDv)+" đơn vị"]);
+    if(pd.tc>0) L.push(["Trái cây", f1v(pd.tcN)+" đơn vị"]);
+    const hs = suaTuHoSo(bn_of(m)), cur = m.suaId || (mode==="st"?"yt_nepro_1":"gen");
+    if(cur!=="none"){
+      const t = state.thucpham.find(x=>x.id===cur);
+      const nm = (t && t.cach_pha) ? t.ten : "Sữa chua/sữa tươi/phô mai";
+      L.push(["Sữa", esc(nm)+(hs?"":" (mặc định — hồ sơ chưa chọn sữa)")]);
+    }
+    if(pd.hat>0) L.push(["Hạt", f1v(pd.hat/30)+" đơn vị"]);
+    return L; })();
+  const phuTogg = `<div class="row" style="gap:8px 12px;flex-wrap:wrap;align-items:center;"><b style="font-size:13px;">Bữa phụ theo kế hoạch:</b>${phuList.length?phuList.map(([k,v])=>`<span class="chip" style="display:inline-flex;gap:6px;align-items:baseline;padding:4px 10px;border:1px solid var(--border);border-radius:99px;background:var(--surface);font-size:12.5px;"><b>${k}</b><span>${v}</span></span>`).join(""):'<span class="hint" style="margin:0;">Kế hoạch không có bữa phụ.</span>'}<span class="hint" style="margin:0;">Chỉ báo cáo lại từ kế hoạch/hồ sơ; muốn đổi, chỉnh ở phần kế hoạch.</span></div>`;
+  const suaSel = "";
   const tabs = `<div class="row" role="tablist" style="gap:6px;flex-wrap:wrap;">${Object.keys(NX_MODES).map(k=>`<button class="btn sm ${k===mode?"":"secondary"}" type="button" data-mau-mode="${k}" role="tab" aria-selected="${k===mode}">${NX_MODES[k].ten}</button>`).join("")}</div>`;
   return `<div class="stack" style="margin-top:18px;">
     <h3 style="margin:0;">Thực đơn mẫu — ${esc(m.data.ten)}</h3>
@@ -4399,7 +4539,7 @@ async function nv2AnhMotBang(table, kind, btn, lab){
   const who=lab||"bảng";
   try{
     const [cv]=await nv2ChupBang(9000,[table]);
-    const taiVe=async(blob,ext)=>{ const dl=await claude.use("downloads"); if(!dl) throw new Error("môi trường này không hỗ trợ tải file"); await dl.save({filename:nv2TenFile(ext).replace(new RegExp("\\."+ext+"$"),suf+"."+ext),data:blob}); };
+    const taiVe=async(blob,ext)=>{ const dl=await dlGet(); if(!dl) throw new Error("môi trường này không hỗ trợ tải file"); await dl.save({filename:nv2TenFile(ext).replace(new RegExp("\\."+ext+"$"),suf+"."+ext),data:blob}); };
     if(kind==="pdf"){
       if(!(window.jspdf&&window.jspdf.jsPDF)) throw new Error("thư viện PDF chưa tải xong");
       const pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:nv2Sheet==="menu"?"landscape":"portrait",compress:true});
@@ -4426,7 +4566,7 @@ async function nv2XuatBang(kind){
   if(typeof html2canvas==="undefined"){ banner("Thư viện chụp ảnh chưa tải xong, thử lại sau vài giây.","danger"); return; }
   if(kind==="pdf"){
     if(!(window.jspdf&&window.jspdf.jsPDF)){ banner("Thư viện tạo PDF chưa tải xong, thử lại sau vài giây.","danger"); return; }
-    const dl=await claude.use("downloads"); if(!dl) throw new Error("môi trường này không hỗ trợ tải file");
+    const dl=await dlGet(); if(!dl) throw new Error("môi trường này không hỗ trợ tải file");
     const cvs=await nv2ChupBang(9000);
     /* V260: 1 ngày/trang, không cắt đôi bảng. Tất cả các ngày dùng CHUNG một tỉ lệ thu phóng (lấy mức nhỏ nhất vừa khung) và cùng lề trái/trên → mọi bảng cùng rộng, cột thẳng hàng giữa các trang. */
     const pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:nv2Sheet==="menu"?"landscape":"portrait",compress:true});
@@ -4446,7 +4586,7 @@ async function nv2XuatBang(kind){
     const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
     try{ await nxaCopyBlob(blob); banner("Đã sao chép hình ảnh bảng. Dán (Ctrl+V) vào Word, Zalo hoặc email.","info"); }
     catch(e){
-      const dl=await claude.use("downloads");
+      const dl=await dlGet();
       if(dl){ await dl.save({filename:nv2TenFile("png"), data:blob}); banner("Môi trường này không cho sao chép ảnh trực tiếp nên tôi đã tải ảnh PNG về máy thay thế.","info"); }
       else throw e;
     }
@@ -4609,7 +4749,7 @@ async function exportExcelV2(bn,v2,startISO,nguoiLap){
   const blob = new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
   const fname = `${String(bn.ten||"thuc_don").replace(/\s+/g,"_")}_thuc_don_${startISO||""}.xlsx`;
   try{
-    const dl = await claude.use("downloads");
+    const dl = await dlGet();
     if(dl){ await dl.save({filename:fname, data:blob}); return; }
   }catch(e){}
   banner("Không thể lưu file trong môi trường này. Hãy dùng nút \"Sao chép bảng này\" rồi dán vào Excel/Google Sheets (giữ màu và ô gộp).","danger");
@@ -8215,6 +8355,13 @@ function wireEvents(){
   else if(currentTab==="mon") wireMon();
 }
 
+(function wireDbTools(){
+  document.getElementById("btn-sao-luu")?.addEventListener("click",()=>{ saoLuuDuLieu().catch(e=>banner("Không sao lưu được: "+esc(e.message||e),"danger")); });
+  const fi=document.getElementById("file-khoi-phuc");
+  document.getElementById("btn-khoi-phuc")?.addEventListener("click",()=>fi&&fi.click());
+  fi?.addEventListener("change",()=>{ const f=fi.files&&fi.files[0]; if(f) khoiPhucDuLieu(f).catch(e=>banner("Không khôi phục được: "+esc(e.message||e),"danger")); fi.value=""; });
+  document.getElementById("btn-dang-xuat")?.addEventListener("click",()=>{ supaSaveSess(null); location.reload(); });
+})();
 (async function boot(){
   switchTab("tao");
   await initDb();
