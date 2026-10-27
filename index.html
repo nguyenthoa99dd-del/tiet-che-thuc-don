@@ -162,6 +162,11 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--in
 .bn-klt-det summary{cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;padding:2px 0;}
 .bn-klt-det .row{margin-top:4px;padding:6px 8px;border:1px dashed var(--border);border-radius:6px;}
 .bn-gv-adj{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+#nn-overlay .bn-natri-gv-t{display:none;}
+#nn-overlay #bn-gv-tot .gva-tot-l{margin-top:0;padding:3px 4px 3px 8px;}
+#nn-overlay #bn-gv-tot .gva-tot button.btn.gva-reset{width:26px;height:26px;line-height:26px;font-size:14px;}
+#nn-overlay .gva-bar{height:24px;}
+#nn-overlay .gva-amts{font-size:12px;}
 .gva-bar{position:relative;display:flex;height:30px;border-radius:8px;overflow:visible;border:1px solid var(--border);user-select:none;touch-action:none;}
 .gva-seg{height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11.5px;font-weight:700;overflow:hidden;white-space:nowrap;}
 .gva-seg:first-child{border-radius:7px 0 0 7px;} .gva-seg:last-of-type{border-radius:0 7px 7px 0;}
@@ -591,6 +596,8 @@ body.show-hints p.hint, body.show-hints .hint-long{display:block;}
 .btn .spin{display:inline-block;width:13px;height:13px;margin-right:7px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:btnspin .7s linear infinite;}
 @keyframes btnspin{to{transform:rotate(360deg);}}
 .xacnhan-overlay{position:fixed;inset:0;background:rgba(10,20,15,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;}
+.nn-hot input,.nn-hot .sel-tim-in{border:2px solid var(--accent)!important;background:var(--accent-soft)!important;font-weight:700;}
+.nn-hot input::placeholder{font-weight:400;}
 .xacnhan-box{background:var(--surface);border-radius:12px;max-width:480px;width:100%;padding:20px 22px;box-shadow:0 12px 40px rgba(0,0,0,.3);}
 .xacnhan-title{font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:600;color:var(--danger);margin-bottom:10px;}
 .xacnhan-body{font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:18px;}
@@ -641,7 +648,8 @@ body.show-hints p.hint, body.show-hints .hint-long{display:block;}
           <h2 id="pagetitle">Xây dựng thực đơn</h2>
           <div class="hint" id="pagesub">Chọn bệnh nhân và số ngày — engine tính theo hệ "phần trao đổi thực phẩm" đã khai ở hồ sơ bệnh nhân.</div>
         </div>
-        <button class="btn" id="btn-tao-moi" type="button" style="margin-left:auto;padding:11px 22px;font-size:14px;font-weight:700;box-shadow:0 2px 8px rgba(46,107,87,.35);white-space:nowrap;">+ Bệnh nhân mới</button>
+        <button class="btn secondary" id="btn-nhap-nhanh" type="button" style="margin-left:auto;padding:11px 18px;font-size:14px;font-weight:700;white-space:nowrap;">⚡ Nhập nhanh</button>
+        <button class="btn" id="btn-tao-moi" type="button" style="margin-left:0; style="margin-left:auto;padding:11px 22px;font-size:14px;font-weight:700;box-shadow:0 2px 8px rgba(46,107,87,.35);white-space:nowrap;">+ Bệnh nhân mới</button>
         <div class="pr-search-wrap" id="bn-list-search-wrap" hidden style="width:300px;max-width:100%;margin-left:auto;align-self:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.8-4.8"></path></svg><input type="text" id="bn-list-search" placeholder="Tìm theo tên bệnh nhân..." autocomplete="off" style="width:100%;box-sizing:border-box;padding-left:33px;"></div>
       </div>
       <div id="banner-area"></div>
@@ -3180,7 +3188,7 @@ const NV2 = (function(){
     };
     const phuDv = mdNC.phu;
     const kaliHan = K_CAP>0 && K_CAP<=2600;                           // ca có trần Kali (suy thận…)
-    return {kho,tpMap,bn,kcal,P_T,G_T,L_T,NA_T,K_CAP,H,U,phuDv,thieuPB,units:{nc,dam,dau,rau,tc,hat},TC_G:tc*80,kaliHan,sup,cungMon:!!opt.cungMon,ibs:!!opt.ibs,
+    return {kho,tpMap,bn,kcal,P_T,G_T,L_T,NA_T,K_CAP,H,U,phuDv,thieuPB,units:{nc,dam,dau,rau,tc,hat},TC_G:tc*80,kaliHan,sup,cungMon:!!opt.cungMon,donCom:!!opt.donCom,ibs:!!opt.ibs,
             chiSo:Array.isArray(opt.chiSo)?opt.chiSo:["xo","sat","Zn_mg"],
             gvIds:(bn.gia_vi_loai&&bn.gia_vi_loai.length)?bn.gia_vi_loai:GV_DEFAULT, klt:(bn.kali_loai_tru||[]).concat(opt.purin?(bn.purin_loai_tru||[]):[], opt.phospho?(bn.phospho_loai_tru||[]):[], opt.oxalat?(bn.oxalat_loai_tru||[]):[])};
   }
@@ -3438,8 +3446,21 @@ const NV2 = (function(){
   function buildDay(cfg,byId,sel,idx,gv){
     const [s,l,d]=sel.c; const S=byId[s],L=byId[l],Dm=byId[d];
     const pc=cfg.__pc; const {f}=dayLinear(cfg,pc,s,l,d,sel.fr,sel.o);
-    const sm=meal(cfg,S,"sang")[0], lm=meal(cfg,L,"trua",f)[0], dm=meal(cfg,Dm,"toi",f)[0];
-    const phuFood=phuItems(cfg,sel.o), pt=phuFood.concat(supItems(cfg));
+    let sm=meal(cfg,S,"sang")[0], lm=meal(cfg,L,"trua",f)[0], dm=meal(cfg,Dm,"toi",f)[0];
+    const phuFood0=phuItems(cfg,sel.o); let phuFood=phuFood0, pt=phuFood0.concat(supItems(cfg));
+    let phuGroups=MON_GROUPS[sel.o];
+    if(cfg.donCom){   // V339: Độn vào cơm — khoai/bắp cữ phụ, đậu, hạt có dầu → chia 50:50 vào cơm Trưa và Tối (khoai, hạt giữ nguyên khối lượng; đậu quy ra khối lượng chín: 30 g khô ≈ 80 g chín). Dinh dưỡng cả ngày không đổi.
+      const moved = pt.filter(i=>i.grp==="Phụ trưa" || i.supGid==="dau_hat" || i.supGid==="hat_co_dau");
+      const half = (i)=>{ const c=Object.assign({},i); KEYS.forEach(k=>{ c[k]=(i[k]||0)/2; }); c.x={}; Object.keys(i.x||{}).forEach(k=>{ c.x[k]=i.x[k]/2; });
+        c.grp="Độn cơm"; c.kind="fix"; c.g=(i.g||0)/2;
+        if(i.supGid==="dau_hat"){ c.ten=(i.ten||"Đậu").replace(/\s*\(.*\)\s*$/,"")+" (hấp chín, độn cơm; "+Math.round(c.g)+" g khô)"; c.g=c.g*80/30; }
+        else if(i.supGid) c.ten=(i.ten||i.disp||"").replace(/\s*\(.*\)\s*$/,"")+" (độn cơm)";
+        else c.ten=(i.disp||i.ten||"").replace(/\s*(luộc|sống)\s*$/i,"")+" (sống, nấu độn cơm)";
+        c.disp=c.ten; return c; };
+      const addTo = (arr)=>{ const dx=arr.findIndex(i=>i.grp==="Dầu"); const add=moved.map(half); return dx<0?arr.concat(add):arr.slice(0,dx).concat(add,arr.slice(dx)); };
+      if(moved.length){ lm=addTo(lm); dm=addTo(dm); pt=pt.filter(i=>!moved.includes(i)); }
+      phuFood=[]; phuGroups=[];
+    }
     const frT=cfg.tpMap[sel.fr];
     const fr=itemOf(cfg,sel.fr,cfg.TC_G);
     const hat=itemOf(cfg,null,0); hat.id=null; hat.ten="Macca/óc chó (giá trị nhóm)"; hat.g=30*cfg.units.hat;
@@ -3450,7 +3471,7 @@ const NV2 = (function(){
     gv.forEach(x=>{ T.Na+=x.Na; });
     const an=all.filter(i=>isAnimal(cfg,i)).reduce((s,i)=>s+i.P,0);
     return {idx,S,L,D:Dm,fr:{id:sel.fr,ten:frT.ten},opt:sel.o,f,sm,fr_item:fr,hat,lm,dm,pt,foodPhu:phuFood.length,gv,T,dvShare:an/(T.P||1)*100,
-            phuGroups:MON_GROUPS[sel.o]};
+            phuGroups};
   }
 
   /* ---------- API chính ---------- */
@@ -3466,6 +3487,7 @@ const NV2 = (function(){
     const pc=precompute(cfg,pool); cfg.__pc=pc;
     const gv=seasonings(cfg);
     let pattern=(o.pattern&&o.pattern.length)?o.pattern:PHU_PATTERN;
+    if(cfg.donCom) pattern=[1,2,1,2,1,2,1];   // V339: Độn vào cơm → cữ phụ khoai chỉ dùng loại luộc được nấu độn (khoai lang / khoai mì)
     if(cfg.klt.length){ const ok=p=>!OPT[p].rows.some(r=>kaliLoaiTru(r[0],cfg.klt)); const alt=PHU_DUNG_DUOC.filter(ok); pattern=pattern.map(p=>ok(p)?p:(alt.length?alt[0]:9)); }
     // nếu ca không có trần Kali: không kìm Kali; nếu có: thang nới dần
     const Kc=cfg.K_CAP||0;
@@ -3926,6 +3948,10 @@ function nv2MauData(bn, mode){
   }
   const RAU_G = gd("Cà rốt") || 80;
   const U = cfg.U, un = cfg.units;
+  // V338: nhóm "Đậu các loại" (1 phần = 30 g hạt khô) hiện theo đúng cữ đã phân bổ trong Bảng số phần
+  const dhTot = parseFloat((bn.food_portions||{}).dau_hat)||0, mdH = (bn.meal_distribution||{}).dau_hat||{};
+  if(dhTot>0 && !((+mdH.sang||0)+(+mdH.trua||0)+(+mdH.toi||0)+(+mdH.phu||0)>0)) return {error:"Bảng số phần của hồ sơ chưa phân bổ vào các cữ (Sáng/Trưa/Tối/Phụ) cho nhóm: Đậu các loại. Hãy vào hồ sơ → Bảng số phần, nhập số phần từng cữ rồi Lưu."};
+  ["sang","trua","toi"].forEach(k=>{ U[k].dh = dhTot>0 ? (+mdH[k]||0) : 0; });
   const meal = (key)=>{ const u=U[key];
     return {nc:NC.filter(x=>x[1]).map(x=>[x[0], r(x[1]*u.nc), x[2]]), dam:DAM.filter(x=>x[1]).map(x=>[x[0], x[3]?Math.min(x[3],r(x[1]*u.dam)):r(x[1]*u.dam), x[2], x[3]?1:0]),
             rau:r(RAU_G*u.rau), dau:u.dau, u}; };
@@ -3938,15 +3964,27 @@ function nv2MauData(bn, mode){
   // gia vị: bảng quy đổi của chuyên gia (file Phạm Văn Minh + ảnh mẫu): 5 g muối (1 muỗng cà phê) = 8 g hạt nêm (2 muỗng cà phê)
   // = 17 g bột ngọt (3 muỗng cà phê) = 25 ml nước mắm (3 muỗng canh) = 32 ml nước tương (3 muỗng canh). Cơ sở: 5 g muối ≈ 2000 mg Natri.
   // Lượng muối tính từ Natri của muối trong bảng thực phẩm; các loại khác theo đúng tỉ lệ của chuyên gia.
+  // V339: Độn vào cơm — phần Phụ của khoai/bắp, đậu, hạt có dầu chia 50:50 vào cơm Trưa và Tối (khoai, hạt giữ khối lượng; đậu 30 g khô ≈ 80 g chín)
+  const DON_COM = !!cdL.donCom;
+  const hcdU = parseFloat((bn.food_portions||{}).hat_co_dau)||0, dhPhu = dhTot>0 ? (+mdH.phu||0) : 0;
+  const DUN = DON_COM ? {
+    khoai: (phuDv>0) ? phu.map(x=>({n:x[0], g:r(x[1]/2), ico:x[2]})) : [],
+    dhKho: r(30*dhPhu/2), dhChin: r(30*dhPhu/2*80/30), hcd: r(30*hcdU/2),
+    hcdTen: (()=>{ const id=String((bn.food_fixed||{}).hat_co_dau||"").split(",")[0].trim(), t=id&&cfg.tpMap[id]; return t?t.ten:"Hạt có dầu (hạnh nhân, hạt điều…)"; })(),
+    unitK: phuDv/2, unitD: dhPhu/2, unitH: hcdU/2
+  } : null;
   const GV = gvKeHoach(bn, cfg.NA_T);   // V171: theo gia vị đã chọn + lượng chuyên gia chỉnh ở Mục tiêu dinh dưỡng
   const OIL_ML_PER_G = 1;   // chốt 09/10/2026: 1 đơn vị dầu = 5 ml = 1 muỗng canh
   const oilMl = k => U[k].dau*5*OIL_ML_PER_G;
   const dauTong = (U.sang.dau+U.trua.dau+U.toi.dau)*5*OIL_ML_PER_G;   // V305: tổng dầu = cộng 3 cữ theo Bảng số phần (không lấy số tự tính)
   return {mode, ten:bn.ten||"", kcal:cfg.kcal, pG,pP,pL, P_T:cfg.P_T, NA_T:cfg.NA_T, K_CAP:cfg.K_CAP, kaliHan:K_HAN,
     sang:meal("sang"), trua:meal("trua"), toi:meal("toi"), toiGiongTrua:same(U.trua,U.toi),
-    phu:{khoai:phu, tc:r(un.tc*80), tcN:un.tc, hat:r(un.hat*30)},
+    phu:{khoai:phu, tc:r(un.tc*80), tcN:un.tc, hat:r(un.hat*30),
+      dhN:(cdL.donCom?0:(dhTot>0?(+mdH.phu||0):0)), dh:(cdL.donCom?0:r(30*(dhTot>0?(+mdH.phu||0):0))),
+      hcdN:(cdL.donCom?0:(parseFloat((bn.food_portions||{}).hat_co_dau)||0)), hcd:(cdL.donCom?0:r(30*(parseFloat((bn.food_portions||{}).hat_co_dau)||0))),   // V337: "Hạt có dầu các loại" (hạnh nhân, hạt điều…) cũng hiện ở Bữa phụ
+      hcdTen:(()=>{ const id=String((bn.food_fixed||{}).hat_co_dau||"").split(",")[0].trim(), t=id&&cfg.tpMap[id]; return t?t.ten:"Hạt có dầu (hạnh nhân, hạt điều…)"; })()},
     dau:{ml:dauTong, tbsp:dauTong/5, sang:oilMl("sang"), trua:oilMl("trua"), toi:oilMl("toi")},
-    gv:GV, units:un, phuDv, klt:KLT,
+    gv:GV, units:un, phuDv:(DON_COM?0:phuDv), donCom:DON_COM, dun:DUN, klt:KLT,
     fac:{com:55, bun:gd("Bún tươi"), banhmi:gd("Bánh mì"), bap:gd("Bắp hạt"), khoai:gd("Khoai lang"), thit:gd("Thịt heo nạc"), ca:gd("Cá lóc"), tom:gd("Tôm"), trung:gd("Trứng gà"), dauphu:gd("Đậu phụ"), tauhuky:gd("Tàu hủ ky khô"), dau:gd("Đậu đen khô"), nam:gd("Nấm bào ngư")}};
 }
 
@@ -4091,6 +4129,15 @@ function nv2MauPoster(d){
     return `<div class="pa-veg">${NX_ICO.rau}<div class="pa-vt"><b><span class="pa-g" contenteditable="true" spellcheck="false" data-ek="${k}.rau.g">${E(gv)}</span> g</b> ${ce(k+".rau.n","Rau củ quả"+(rauNote?" "+rauNote:""))}${(!isST && !(mode==="sk"&&k!=="sang")&&!(mode==="ibs"&&k!=="sang")&&false)?"":""}${(!isST && k==="sang")?` <small class="pa-e" style="display:inline" data-gk="${k}.rau.g" data-div="120" data-unit="chén">≈ ${estI(k+".rau.g",nxEst(parseFloat(String(gv).replace(",","."))/120))} chén</small>`:""}</div></div>`; };
   const oil = (k,u)=>{ const ml=r0(5*u.dau); const gv = ED[k+".oil.g"]!=null ? ED[k+".oil.g"] : ml;
     return `<div class="pa-oil">${NX_ICO.dauspoon}<div><b><span class="pa-g" contenteditable="true" spellcheck="false" data-ek="${k}.oil.g">${E(gv)}</span> ml</b> ${ce(k+".oil.n","dầu oliu")} <small class="pa-e" style="display:inline" data-gk="${k}.oil.g" data-div="5" data-unit="muỗng canh">≈ ${estI(k+".oil.g",nxEst(parseFloat(String(gv).replace(",","."))/5))} muỗng canh</small></div></div>`; };
+  /* V339: khối "Độn vào cơm" ở bữa Trưa/Tối — khoai/bắp (chọn 1), đậu (khối lượng chín), hạt có dầu; mỗi bữa một nửa */
+  const dunHtml = (bk)=>{ const Dn=d.dun; if(!Dn) return "";
+    const its=[]; 
+    if(Dn.khoai.length) its.push(...Dn.khoai.map((x,i)=>item(bk+".dk."+i,{ico:x.ico==="khoai"?"khoaiP":x.ico,n:x.n+" (chọn 1 loại)",g:x.g})));
+    if(Dn.dhKho>0) its.push(item(bk+".dd",{ico:"dau",n:"Đậu hấp chín (≈ "+Dn.dhKho+" g hạt khô)",g:Dn.dhChin}));
+    if(Dn.hcd>0) its.push(item(bk+".dh",{ico:"hat",n:Dn.hcdTen,g:Dn.hcd}));
+    if(!its.length) return "";
+    return gh("Độn vào cơm","nấu chung với cơm — chia đều Trưa/Tối",null)+row(its,Math.min(4,its.length));
+  };
   const mealCard = (bk,ten,sub,color,dark,u,isSang)=>{
     const nc = isSang ? SANG_NC.map(x=>({ico:x.ico,n:x.n,g:r0(x.g*u.nc),div:x.div||null,unit:x.unit})) : scale(TRUA_NC,u.nc);
     const ncItems = nc.map((x,i)=>item(bk+".nc."+i,x)), dmItems = scale(DAM,u.dam).map((x,i)=>item(bk+".dm."+i,x));
@@ -4108,6 +4155,8 @@ function nv2MauPoster(d){
     return `<section class="pa-card" style="--c:${color};${dark?"--t:#4a3900":""}"><h3>${ten}${sub?`<small>${E(sub)}</small>`:""}</h3>
       ${gh("Tinh bột","",u.nc,1)}${row(ncItems,5)}
       ${gh(damHead[0],damHead[1],u.dam,2)}${row(dmItems,4)}
+      ${(d.dun && bk!=="sang" && dunHtml)?dunHtml(bk):""}
+      ${(u.dh>0)?gh("Đậu các loại","hạt khô — nấu chè/canh/độn cơm",u.dh)+row([item(bk+".dh",{ico:"dau",n:"Đậu đen/đỏ/xanh/gà/hà lan (hạt khô)",g:r0(30*u.dh),div:120,unit:"chén"})],1):""}
       ${gh("Rau củ quả",isST?"ưu tiên nhóm Kali thấp/trung bình":"đa dạng màu sắc",u.rau,3)}${rauHtml}
       ${gh("Chất béo","dầu oliu",u.dau,4)}${oil(bk,u)}</section>`;
   };
@@ -4140,6 +4189,12 @@ function nv2MauPoster(d){
     const hn = mode==="sk" ? "Hạt điều/macca/hạnh nhân" : isST ? "Hạt macca/óc chó" : "Hạt các loại";
     phuCols.push(`<div class="pa-pc">${item("ps.hat",{ico:"hat",n:hn,g:hatG,div:30,unit:"nắm tay"})}${mode==="ibs"?notes("ps.hat.n",[["ok","Ưu tiên",L.ibs_hat_ut],["no","Không ăn",L.ibs_hat_no]]):""}</div>`);
   }
+  if((d.phu.dh||0)>0 && !off.dh){
+    phuCols.push(`<div class="pa-pc">${item("ps.dh",{ico:"dau",n:"Đậu các loại (hạt khô)",g:d.phu.dh,div:120,unit:"chén"})}</div>`);
+  }
+  if((d.phu.hcd||0)>0 && !off.hcd){
+    phuCols.push(`<div class="pa-pc">${item("ps.hcd",{ico:"hat",n:d.phu.hcdTen,g:d.phu.hcd,div:30,unit:"nắm tay"})}</div>`);
+  }
   /* khoai/bắp luộc (cũ: "phụ sau trưa") gộp vào cùng 1 thẻ Bữa phụ */
   let khoaiBlk = "";
   if(d.phuDv>0 && !off.khoai){
@@ -4152,7 +4207,7 @@ function nv2MauPoster(d){
     khoaiBlk = `${gh("Khoai/bắp luộc","chọn 1 loại, đổi được cho nhau",d.phuDv)}${row(itk.map((x,i)=>item("pt."+i,x)),4)}${kn.length?notes("pt.n",kn):""}`;
   }
   const colsBlk = phuCols.length ? `<div class="pa-ph" style="--n:${phuCols.length}">${phuCols.join("")}</div>` : "";
-  const phuParts = [khoaiBlk?"khoai":"", (U.tc>0&&!off.tc)?"trái cây":"", sId!=="none"?"sữa":"", (U.hat>0&&!off.hat)?"hạt":""].filter(Boolean);
+  const phuParts = [khoaiBlk?"khoai":"", (U.tc>0&&!off.tc)?"trái cây":"", sId!=="none"?"sữa":"", (U.hat>0&&!off.hat)?"hạt":"", ((d.phu.hcd||0)>0&&!off.hcd)?"hạt có dầu":"", ((d.phu.dh||0)>0&&!off.dh)?"đậu":""].filter(Boolean);
   const phuSang = (khoaiBlk||colsBlk) ? `<section class="pa-card pa-phu" style="--c:${NXP_COL.phu}"><h3>Bữa phụ<small>${phuParts.join(" · ")}</small></h3>
     ${khoaiBlk}${khoaiBlk&&colsBlk?'<div class="pa-plus"><span>+</span></div>':""}${colsBlk}
     <div class="pa-bell">${NX_ICO.chuong}<span>Cần ăn, uống đủ tất cả các thực phẩm của các cữ phụ ở trên</span></div></section>` : "";
@@ -4282,6 +4337,9 @@ function renderMauResult(){
       L.push(["Sữa", esc(nm)]);
     }
     if(pd.hat>0) L.push(["Hạt", f1v(pd.hat/30)+" đơn vị"]);
+    if(pd.hcd>0) L.push(["Hạt có dầu", f1v(pd.hcdN)+" đơn vị"]);
+    if(pd.dh>0) L.push(["Đậu các loại", f1v(pd.dhN)+" đơn vị"]);
+    if(m.data.donCom && m.data.dun){ const Dn=m.data.dun, t=[]; if(Dn.unitK>0) t.push("khoai/bắp "+f1v(Dn.unitK*2)+" đv"); if(Dn.unitD>0) t.push("đậu "+f1v(Dn.unitD*2)+" đv"); if(Dn.unitH>0) t.push("hạt có dầu "+f1v(Dn.unitH*2)+" đv"); if(t.length) L.push(["Độn vào cơm (Trưa/Tối 50:50)", t.join(" · ")]); }
     return L; })();
   const phuTogg = `<div class="row" style="gap:8px 12px;flex-wrap:wrap;align-items:center;"><b style="font-size:13px;">Bữa phụ theo kế hoạch:</b>${phuList.length?phuList.map(([k,v])=>`<span class="chip" style="display:inline-flex;gap:6px;align-items:baseline;padding:4px 10px;border:1px solid var(--border);border-radius:99px;background:var(--surface);font-size:12.5px;"><b>${k}</b><span>${v}</span></span>`).join(""):'<span class="hint" style="margin:0;">Kế hoạch không có bữa phụ.</span>'}</div>`;
   const suaSel = "";
@@ -4567,7 +4625,7 @@ function tdNhanBan(r){
   return mo+(t?" lưu lúc "+t:"");
 }
 const TD_HOSO_NHAN = {target_energy:"Năng lượng", target_protein:"Đạm", target_lipid:"Lipid", target_carb:"Glucid", natri_target:"Natri", kali_ceiling:"Kali trần", can_nang_kg:"Cân nặng"};
-const TD_CHEDO_NHAN = {than:"Suy thận", ibs:"IBS", purin:"Purin", dtd:"ĐTĐ", phospho:"Phospho", oxalat:"Oxalat", cungMon:"Trưa & Tối cùng món"};
+const TD_CHEDO_NHAN = {than:"Suy thận", ibs:"IBS", purin:"Purin", dtd:"ĐTĐ", phospho:"Phospho", oxalat:"Oxalat", cungMon:"Trưa & Tối cùng món", donCom:"Độn vào cơm"};
 function tdCauHinh(bn){   // ảnh chụp cài đặt lúc xây — để lần sau hiện "điểm vừa thay đổi"
   const cd=cheDoLay(bn), ho={}; Object.keys(TD_HOSO_NHAN).forEach(k=>{ ho[k]=bn[k]==null?null:bn[k]; });
   const che={}; Object.keys(TD_CHEDO_NHAN).forEach(k=>{ che[k]=!!cd[k]; });
@@ -4947,7 +5005,7 @@ function nv2SerializeDays(days){ return days.map(d=>{ const c=JSON.parse(JSON.st
 async function nv2Generate(bn, soNgay, nguoiLap, startISO, regen){
   if(regen) nv2Seed++;
   const cdX = cheDoLay(bn);
-  const res = NV2.build(state, bn, {nDays:soNgay, chiSo:chiSoTheoDoi.slice(), seed:nv2Seed, than:cdX.than, ibs:cdX.ibs, purin:cdX.purin, dtd:cdX.dtd, phospho:cdX.phospho, oxalat:cdX.oxalat, cungMon:cdX.cungMon});
+  const res = NV2.build(state, bn, {nDays:soNgay, chiSo:chiSoTheoDoi.slice(), seed:nv2Seed, than:cdX.than, ibs:cdX.ibs, purin:cdX.purin, dtd:cdX.dtd, phospho:cdX.phospho, oxalat:cdX.oxalat, cungMon:cdX.cungMon, donCom:cdX.donCom});
   if(res.error){
     const ly=(res.lyDo||[]).map(x=>`<li>${esc(x)}</li>`).join("");
     const gy = res.lyDo ? `<div style="margin-top:6px;"><b>Gợi ý:</b> kiểm tra lại mục tiêu năng lượng/đạm/glucid/lipid của hồ sơ (các số có khớp nhau không), số phần rau/trái cây/hạt, hoặc bổ sung nguyên liệu cho các món trong Kho món.</div>` : "";
@@ -5051,7 +5109,7 @@ function switchTab(tab){
   function enh(sel){
     if(sel.dataset.tim) return; sel.dataset.tim="1"; sel.style.display="none";
     const inp=document.createElement("input"); inp.type="text"; inp.className="sel-tim-in"; inp.autocomplete="off"; inp.spellcheck=false;
-    inp.placeholder="Gõ tên để tìm…"; 
+    inp.placeholder=sel.dataset.ph||"Gõ tên để tìm…"; 
     const cur=()=>{ const o=sel.options[sel.selectedIndex]; return (o && o.value) ? o.textContent : ""; };
     inp.value=cur();
     sel.after(inp);
@@ -5065,7 +5123,7 @@ function switchTab(tab){
       box.style.left=r.left+"px"; box.style.top=(r.bottom+2)+"px"; box.style.minWidth=Math.max(r.width,260)+"px";
       const build=()=>{
         box.innerHTML="";
-        const clear=document.createElement("div"); clear.className="sel-tim-op sel-tim-clear"; clear.textContent="— Bỏ chọn —"; clear.dataset.v=""; box.appendChild(clear);
+        const clear=document.createElement("div"); clear.className="sel-tim-op sel-tim-clear"; clear.textContent=sel.dataset.clear||"— Bỏ chọn —"; clear.dataset.v=""; box.appendChild(clear);
         if(!items.length){ const n=document.createElement("div"); n.className="sel-tim-none"; n.textContent="Không tìm thấy sản phẩm"; box.appendChild(n); }
         items.forEach((o,i)=>{ const d=document.createElement("div"); d.className="sel-tim-op"+(i===act?" on":"")+(o.value===sel.value?" cur":""); d.textContent=o.textContent; d.dataset.v=o.value; box.appendChild(d); });
       };
@@ -5293,6 +5351,7 @@ function wireTao(){
     bnCardMo = {4:false, 6:false, 7:false, 8:false, 9:false};
     render();
   });
+  { const bnn=document.getElementById("btn-nhap-nhanh"); if(bnn){ bnn.hidden=(currentTab!=="tao"||!!bnFormMode); bnn.onclick=nhapNhanhMo; } }
   const btnMoi = document.getElementById("btn-tao-moi");
   if(btnMoi){ btnMoi.hidden = (currentTab!=="tao"); btnMoi.onclick = ()=>{
     bnFormMode = "new";
@@ -5381,6 +5440,162 @@ function wireTao(){
 }
 
 /* ---------------- BỆNH NHÂN ---------------- */
+/* V312: NHẬP NHANH — khung gọn để tư vấn nhanh: nhập tay kcal/đạm/glucid/lipid (+Natri, Kali), số phần rau/trái cây/hạt, gia vị đã dùng → lưu hồ sơ và xây ngay Thực đơn mẫu.
+   Bảng số phần chia cữ theo gợi ý 30:35:35 (goiYPhanPhoiBua). Mọi số đều hiện ra để sửa — không có giá trị ẩn. Luôn lưu vào danh sách bệnh nhân. */
+function nhapNhanhMo(){
+  document.getElementById("nn-overlay")?.remove();
+  const ov=document.createElement("div"); ov.id="nn-overlay"; ov.className="xacnhan-overlay";
+  const num=(id,lb,ph,w,hot)=>`<label class="${hot?"nn-hot":""}" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:${hot?700:600};${hot?"color:var(--accent);":""}">${lb}<input id="${id}" type="number" step="any" min="0" placeholder="${ph||""}" style="width:${w||100}px;"></label>`;
+  ov.innerHTML=`<div class="xacnhan-box" style="max-width:560px;max-height:92vh;overflow:auto;">
+    <div class="xacnhan-title" style="color:var(--ink);">⚡ Nhập nhanh để có thực đơn mẫu</div>
+    <div class="stack" id="nn-s1" style="gap:12px;margin-top:8px;">
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:600;">Khách hàng<select id="nn-bn" class="sel-tim" data-ph="Tìm kiếm" data-clear="+ Khách hàng mới"><option value="">+ Khách hàng mới</option>${state.benhnhan.map(b=>`<option value="${esc(b.id)}">${esc(b.ten)}</option>`).join("")}</select></label>
+      <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <label style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:600;flex:1;min-width:180px;">Tên khách hàng*<input id="nn-ten" type="text" autocomplete="off"></label>
+        <label style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:600;">Giới tính<select id="nn-gt"><option value="">—</option><option value="nu">Nữ</option><option value="nam">Nam</option></select></label>
+        ${num("nn-tuoi","Tuổi","",70)}
+      </div>
+      <label style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:600;">Chế độ thực đơn mẫu<select id="nn-cd"><option value="sk">Sống khỏe</option><option value="st">Bệnh thận mạn</option><option value="ibs">IBS</option></select></label>
+      <div class="row" style="gap:10px;flex-wrap:wrap;">
+        <label style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:600;flex:1;min-width:200px;">Ngũ cốc<select id="nn-nc">${NC_CHE_DO.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select></label>
+        <label style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:600;flex:1;min-width:200px;">Rau<select id="nn-rauc">${RAU_CHE_DO.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select></label></div>
+      <div><div style="font-size:12.5px;font-weight:700;margin-bottom:4px;">Mục tiêu dinh dưỡng/ngày*</div>
+        <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-start;"><div style="display:flex;flex-direction:column;gap:3px;">${num("nn-kcal","Năng lượng (kcal)","vd 1700",110)}<b style="font-size:13px;">&nbsp;</b></div>${["gp|Glucid (%)|nn-g-g","pp|Protid (%)|nn-p-g","lp|Lipid (%)|nn-l-g"].map(x=>{ const [k,lb,gid]=x.split("|"); return `<div style="display:flex;flex-direction:column;gap:3px;">${num("nn-"+k,lb,"",80)}<b id="${gid}" style="font-size:13px;color:var(--ink-soft);">— g</b></div>`; }).join("")}</div></div>
+      <div><div style="font-size:12.5px;font-weight:700;margin-bottom:4px;">Số phần/ngày</div>
+        <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end;"><label class="nn-hot" style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;font-weight:700;color:var(--accent);flex:1;min-width:220px;">Sữa<select id="nn-sua" class="sel-tim" data-ph="Tìm kiếm"><option value="">— Không dùng sữa —</option>${state.thucpham.filter(t=>t.nhom==="sua").sort((a,b)=>String(a.ten).localeCompare(String(b.ten),"vi")).map(t=>`<option value="${esc(t.id)}">${esc(t.ten)}</option>`).join("")}</select></label>${num("nn-sua-phan","Số phần sữa","",90,1)}</div>
+        <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:8px;">${num("nn-hcd","Hạt có dầu các loại","",110)}${num("nn-hat","Hạt macca/óc chó","",110,1)}${num("nn-dau","Đậu các loại","",90)}${num("nn-tc","Trái cây","",80,1)}${num("nn-ngot","Thực phẩm ngọt","",100)}${num("nn-rau","Rau các loại","",80,1)}</div></div>
+      <div><div style="font-size:12.5px;font-weight:700;margin-bottom:4px;">Gia vị</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">${num("bn-natri","Natri (mg/ngày)","vd 2000",120)}<div id="bn-gv-tot" style="flex:1;min-width:170px;"></div></div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:6px;">${Object.entries(GIA_VI_LABEL).map(([k,lb])=>`<label class="checkfield" style="margin:0;padding:0;min-height:0;"><input type="checkbox" class="bn-giavi" value="${k}"> ${lb}</label>`).join("")}</div>
+        <div id="bn-gv-adj" class="bn-gv-adj" data-gv="{}" style="margin-top:6px;"></div></div>
+      <div id="nn-err" class="banner danger" hidden></div>
+    </div>
+    <div id="nn-s2" class="stack" style="gap:8px;margin-top:8px;" hidden></div>
+    <div class="xacnhan-actions" id="nn-act1" style="margin-top:14px;"><button class="btn ghost" id="nn-huy" type="button">Hủy</button><button class="btn nuca-primary" id="nn-tao" type="button">Tiếp tục</button></div>
+    <div class="xacnhan-actions" id="nn-act2" style="margin-top:14px;" hidden><button class="btn ghost" id="nn-back" type="button">← Quay lại</button><button class="btn nuca-primary" id="nn-luu" type="button">Lưu và tạo thực đơn mẫu</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener("click",e=>{ if(e.target===ov) ov.remove(); });
+  const $=id=>document.getElementById(id), v=id=>parseFloat(String($(id).value).replace(",","."))||0;
+  // đạm/glucid = kcal × % ÷ 4 · lipid = kcal × % ÷ 9 (làm tròn 0,1 g) — hiện gram ngay dưới từng ô %
+  const gam=()=>{ const K=v("nn-kcal"), r1=x=>Math.round(x*10)/10; return {P:r1(K*v("nn-pp")/400), G:r1(K*v("nn-gp")/400), L:r1(K*v("nn-lp")/900)}; };
+  const pct=()=>{ const g=gam(); $("nn-p-g").textContent=g.P>0?`${g.P} g`:"— g"; $("nn-g-g").textContent=g.G>0?`${g.G} g`:"— g"; $("nn-l-g").textContent=g.L>0?`${g.L} g`:"— g"; };
+  $("nn-huy").onclick=()=>ov.remove();
+  const dat=(id,val)=>{ $(id).value = (val==null||val==="")?"":val; };
+  const dien=(b)=>{   // nạp hồ sơ đang có vào khung (hoặc xoá trống nếu khách mới)
+    const fp=(b&&b.food_portions)||{}, cdb=b?cheDoLay(b):null;
+    dat("nn-ten",b?b.ten:""); $("nn-gt").value=b?(b.gioi_tinh||""):""; dat("nn-tuoi",b&&+b.tuoi>0?b.tuoi:"");
+    $("nn-cd").value = b ? (b.nhap_nhanh_che_do || (cdb.than?"st":(cdb.ibs?"ibs":"sk"))) : "sk";
+    { const K=b?+b.target_energy:0, pc=(x,m)=>(K>0&&+x>0)?Math.round(x*m/K*1000)/10:"";
+      dat("nn-kcal",b&&b.target_energy); dat("nn-pp",b?pc(b.target_protein,4):""); dat("nn-gp",b?pc(b.target_carb,4):""); dat("nn-lp",b?pc(b.target_lipid,9):""); }
+    ord = (b && +b.target_energy>0 && +b.target_protein>0 && +b.target_carb>0 && +b.target_lipid>0) ? ["nn-pp","nn-gp"] : []; autoId = ord.length ? "nn-lp" : null;
+    dat("bn-natri",b&&b.natri_target); 
+    dat("nn-rau",b?fp.rau:""); dat("nn-tc",b?fp.trai_cay:""); dat("nn-hat",b?fp.hat_oc_cho:"");
+    { const cdd=b?cheDoDamHienTai(b):{nc:"da_dang",rau:"da_dang"}; $("nn-nc").value=cdd.nc||"da_dang"; $("nn-rauc").value=cdd.rau||"da_dang"; }
+    dat("nn-hcd",b?fp.hat_co_dau:""); dat("nn-ngot",b?fp.tp_ngot:""); dat("nn-dau",b?fp.dau_hat:"");
+    { const sr=b?((boSungRowsOf(b).sua||[]).find(r=>r.id&&r.phan>0)):null, se=$("nn-sua"); se.value=sr?sr.id:""; if(se.value!==(sr?sr.id:"")) se.value="";
+      const ti=se.nextElementSibling; if(ti&&ti.classList.contains("sel-tim-in")){ const o=se.options[se.selectedIndex]; ti.value=(o&&o.value)?o.textContent:""; }
+      dat("nn-sua-phan",sr?sr.phan:""); }
+    document.querySelectorAll("#nn-overlay .bn-giavi").forEach(x=>{ x.checked = !!(b&&(b.gia_vi_dang_dung||[]).includes(x.value)); });
+    { const ga=$("bn-gv-adj"); if(ga) ga.dataset.gv=JSON.stringify((b&&b.gia_vi_tl)||{}); gvAdjRender(); }
+    pct();
+  };
+  // chọn chế độ → gợi ý sẵn Ngũ cốc/Rau (hiện rõ, sửa được): Bệnh thận mạn = Cữ phụ khoai/bắp + Rau củ ít đạm; chế độ khác = Đa dạng
+  $("nn-cd").addEventListener("change",()=>{ const th=$("nn-cd").value==="st"; $("nn-nc").value=th?"khoai_bap":"da_dang"; $("nn-rauc").value=th?"rau_it_dam":"da_dang"; });
+  $("nn-bn").addEventListener("change",()=>dien(state.benhnhan.find(b=>b.id===$("nn-bn").value)||null));
+  // nhập kcal + đạm + glucid → ô Lipid tự nhảy số còn lại = (kcal − 4·đạm − 4·glucid)/9; gõ tay vào Lipid thì không tự nhảy nữa
+  // nhập 2 trong 3 ô % (ô nào trước cũng được) → ô còn lại tự nhảy phần còn lại đến 100%; sửa lại ô tự nhảy thì ô nhập cũ nhất nhường chỗ cho nó
+  let ord=[], autoId=null;
+  const pc3=["nn-gp","nn-pp","nn-lp"];
+  const chiaDu=(id)=>{
+    ord=ord.filter(k=>k!==id); if($(id).value!=="") ord.push(id); if(ord.length>2) ord.shift();
+    if(autoId && ord.includes(autoId)) autoId=null;
+    if(ord.length===2){ const t=pc3.find(k=>!ord.includes(k)), x=100-v(ord[0])-v(ord[1]); autoId=t; $(t).value = x>0 ? Math.round(x*10)/10 : ""; }
+    else if(autoId){ $(autoId).value=""; autoId=null; }
+    pct();
+  };
+  $("nn-kcal").addEventListener("input",pct);
+  pc3.forEach(i=>$(i).addEventListener("input",()=>chiaDu(i)));
+  let S=null;   // bản nháp hồ sơ giữa bước 1 và bước 2 (chưa ghi vào danh sách)
+  $("nn-tao").onclick=()=>{
+    const ten=$("nn-ten").value.trim(), er=$("nn-err"); const loi=[];
+    if(!ten) loi.push("Nhập tên khách hàng.");
+    if(!(v("nn-kcal")>0&&v("nn-pp")>0&&v("nn-gp")>0&&v("nn-lp")>0)) loi.push("Nhập đủ kcal và % glucid, protid, lipid.");
+    else if(Math.abs(v("nn-pp")+v("nn-gp")+v("nn-lp")-100)>0.5) loi.push("Tổng % glucid + protid + lipid phải bằng 100.");
+    if($("nn-sua").value && !(v("nn-sua-phan")>0)) loi.push("Đã chọn sữa thì nhập số phần sữa (1 phần ≈ 100 mg canxi).");
+    if(loi.length){ er.hidden=false; er.textContent=loi.join(" "); return; }
+    er.hidden=true;
+    const cd=$("nn-cd").value, chonId=$("nn-bn").value;
+    // một khách = một hồ sơ: chọn khách có sẵn, hoặc gõ trùng tên khách đã có → cập nhật hồ sơ đó, không tạo thêm
+    const bnCu = state.benhnhan.find(b=>b.id===chonId) || state.benhnhan.find(b=>String(b.ten).trim().toLowerCase()===ten.toLowerCase());
+    const bn = bnCu ? JSON.parse(JSON.stringify(bnCu)) : emptyBenhNhanForm();   // làm việc trên bản nháp, chỉ ghi khi xác nhận bước 2
+    const fp0 = bn.food_portions||{};
+    Object.assign(bn,{
+      ten:(bnCu&&chonId!==bnCu.id)?bnCu.ten:ten, gioi_tinh:$("nn-gt").value, tuoi:v("nn-tuoi")||"", nhap_nhanh_che_do:cd,
+      target_energy:v("nn-kcal"), target_protein:gam().P, target_carb:gam().G, target_lipid:gam().L,
+      ty_le_glucid:v("nn-gp"), ty_le_protein:v("nn-pp"), ty_le_lipid:v("nn-lp"),   // ghi cả tỉ lệ % để hồ sơ đầy đủ hiện đủ
+      natri_target:v("bn-natri")||"",
+      food_portions:Object.assign({hat_co_dau:0,dau_hat:0,tp_ngot:0,sua:0,tp_bo_sung:0,bot_dam:0,mon_khac:0},fp0,{hat_oc_cho:v("nn-hat"),hat_co_dau:v("nn-hcd"),tp_ngot:v("nn-ngot"),dau_hat:v("nn-dau"),rau:v("nn-rau"),trai_cay:v("nn-tc")}),
+      gia_vi_dang_dung:[...document.querySelectorAll("#nn-overlay .bn-giavi:checked")].map(x=>x.value), gia_vi_tl:gvAdjDoc()||{}});
+    { const sid=$("nn-sua").value, sph=v("nn-sua-phan");   // sữa: sản phẩm + số phần → food_rows như hồ sơ đầy đủ
+      const rows=boSungRowsOf(bn); rows.sua = (sid&&sph>0) ? [{id:sid,phan:sph}] : [];
+      bn.food_rows=rows; chuanHoaBoSung(bn); }
+    bn.che_do_dam_tay=true; bn.nc_che_do=$("nn-nc").value; bn.rau_che_do=$("nn-rauc").value;
+    if(!bnCu){ if(cd==="st") bn.benh_ly="Bệnh thận mạn"; bn.ghi_chu="Nhập nhanh"; }
+    if(!bnCu) bn.trua_toi_giong_nhau=true;
+    S={bn,bnCu,cd,ten};
+    veBang();
+    $("nn-s1").hidden=true; $("nn-act1").hidden=true; $("nn-s2").hidden=false; $("nn-act2").hidden=false;
+  };
+  /* BƯỚC 2: bảng phân phối các thực phẩm đã chọn vào từng cữ — gợi ý sẵn (hoặc bảng đã có của hồ sơ), chỉnh tay được */
+  const CHINH=["ngu_coc","dam","rau","dau_mo","dau_hat"];
+  const veBang=()=>{
+    const d=S.bn, comp=computePhanTraoDoi(d), goiY=goiYPhanPhoiBua(d), cu=d.meal_distribution||{};
+    const ds=PHAN_TRAO_DOI_THU_TU.filter(g=>g!=="mon_khac").map(g=>({g, tong:round1(PHAN_TRAO_DOI[g].residual?(comp[g]||0):(parseFloat((d.food_portions||{})[g])||0))})).filter(r=>r.tong>0||["ngu_coc","dam","dau_mo"].includes(r.g));   // V332: 3 nhóm chính luôn hiện
+    const raw=comp.raw||{}, am=["ngu_coc","dam","dau_mo"].filter(g=>(raw[g]||0)<-0.049);
+    const sm=m=>m?((+m.sang||0)+(+m.trua||0)+(+m.toi||0)+(+m.phu||0)):0;
+    const inp=(g,sl,val)=>`<input type="number" step="0.5" min="0" class="nn2" data-g="${g}" data-s="${sl}" value="${val}" style="width:64px;">`;
+    const gn = d.trua_toi_giong_nhau!==false;
+    $("nn-s2").innerHTML=`<label class="checkfield"><input type="checkbox" id="nn2-gn" ${gn?"checked":""}> Trưa và Tối cùng lượng (số phần bằng nhau)</label>
+      ${am.length?`<div class="banner danger" id="nn2-am">${am.map(g=>{ const ten=PHAN_TRAO_DOI[g].ten.replace(/\s*\(.*\)/,""); const gr=Math.abs(raw[g]*(g==="ngu_coc"?PHAN_TRAO_DOI.ngu_coc.g:g==="dam"?PHAN_TRAO_DOI.dam.p:PHAN_TRAO_DOI.dau_mo.l)); const ch=g==="ngu_coc"?"glucid":g==="dam"?"protid":"lipid"; return `<b>${esc(ten)}:</b> -${Math.abs(round1(raw[g]))} phần (≈ ${Math.round(gr)} g ${ch})`; }).join("<br>")}</div>`:""}
+      <div class="tblwrap"><table id="nn2-tb" class="${gn?"pp-gn":""}"><thead><tr><th>Nhóm</th><th>Tổng phần</th><th>Sáng</th><th><span class="pp-t-trua">Trưa</span><span class="pp-t-gn">Trưa/Tối</span></th><th>Tối</th><th>Phụ</th><th>Còn</th></tr></thead><tbody>${ds.map(({g,tong})=>{ const doiNc = g==="ngu_coc" && S.bnCu && cheDoDamHienTai(S.bnCu).nc!==cheDoDamHienTai(d).nc;   // V335: đổi chế độ Ngũ cốc (vd Cữ phụ khoai/bắp) → gợi ý lại
+        const m=(!doiNc&&sm(cu[g])>0&&Math.abs(sm(cu[g])-tong)<0.05)?cu[g]:goiY[g];   // V331: bảng cữ cũ chỉ giữ khi tổng phần còn khớp; đổi mục tiêu/chế độ → gợi ý lại
+        return `<tr data-g="${g}" data-tong="${tong}"><td>${esc(PHAN_TRAO_DOI[g].ten)}</td><td class="num"${am.includes(g)?' style="color:var(--danger);font-weight:700;"':""}>${am.includes(g)?round1(raw[g]):tong}</td><td>${inp(g,"sang",round1(+m.sang||0))}</td><td>${inp(g,"trua",round1(+m.trua||0))}</td><td>${inp(g,"toi",round1(gn?(+m.trua||0):(+m.toi||0)))}</td><td>${inp(g,"phu",round1(+m.phu||0))}</td><td class="num nn2-con">0</td></tr>`; }).join("")}</tbody></table></div>`;
+    ds.forEach(r=>{ if(gn) setToi(r.g); cap(r.g); });
+  };
+  const val2=(g,sl)=>parseFloat(String(document.querySelector(`.nn2[data-g="${g}"][data-s="${sl}"]`).value).replace(",","."))||0;
+  const gn2=()=>!!document.getElementById("nn2-gn")?.checked;
+  const setToi=g=>{ const t=document.querySelector(`.nn2[data-g="${g}"][data-s="toi"]`); t.value=document.querySelector(`.nn2[data-g="${g}"][data-s="trua"]`).value; t.readOnly=true; };
+  const cap=g=>{ const tr=document.querySelector(`#nn-s2 tr[data-g="${g}"]`), tong=+tr.dataset.tong, con=round1(tong-val2(g,"sang")-val2(g,"trua")-val2(g,"toi")-val2(g,"phu")), c=tr.querySelector(".nn2-con"); c.textContent=con; c.style.color=Math.abs(con)>=0.05?"var(--danger)":""; c.style.fontWeight=Math.abs(con)>=0.05?"700":""; };
+  $("nn-s2").addEventListener("input",e=>{
+    const el=e.target; if(!el.classList.contains("nn2")) return; const g=el.dataset.g, sl=el.dataset.s;
+    { const tong=+document.querySelector(`#nn-s2 tr[data-g="${g}"]`).dataset.tong, q=s2=>document.querySelector(`.nn2[data-g="${g}"][data-s="${s2}"]`);
+      ppTuCanBang(g, sl, tong, s2=>q(s2).value, (s2,v)=>{ q(s2).value=v; }, gn2()); }
+    if(sl==="trua" && gn2()) setToi(g);
+    cap(g);
+  });
+  $("nn-s2").addEventListener("change",e=>{
+    if(e.target.id!=="nn2-gn") return; const gn=e.target.checked;
+    document.getElementById("nn2-tb").classList.toggle("pp-gn",gn);
+    document.querySelectorAll("#nn-s2 tr[data-g]").forEach(tr=>{ const g=tr.dataset.g, t=document.querySelector(`.nn2[data-g="${g}"][data-s="toi"]`); if(gn) setToi(g); else t.readOnly=false; cap(g); });
+  });
+  $("nn-back").onclick=()=>{ $("nn-s2").hidden=true; $("nn-act2").hidden=true; $("nn-s1").hidden=false; $("nn-act1").hidden=false; };
+  $("nn-luu").onclick=async ()=>{
+    const {bn,bnCu,cd,ten}=S;
+    if(document.getElementById("nn2-am")){ document.getElementById("nn2-am").scrollIntoView({block:"nearest"}); return; }   // V332: nhóm chính âm → không cho lưu
+    const md={}; document.querySelectorAll("#nn-s2 tr[data-g]").forEach(tr=>{ const g=tr.dataset.g, t=val2(g,"trua"); md[g]={sang:val2(g,"sang"),trua:t,toi:gn2()?t:val2(g,"toi"),phu:val2(g,"phu")}; });
+    PHAN_TRAO_DOI_THU_TU.forEach(g=>{ if(g!=="mon_khac" && !md[g]) md[g]={sang:0,trua:0,toi:0,phu:0}; });   // nhóm không chọn → 0
+    bn.trua_toi_giong_nhau=gn2();
+    bn.meal_distribution=Object.assign({},bn.meal_distribution||{},md);
+    if(bnCu){ state.benhnhan[state.benhnhan.findIndex(b=>b.id===bnCu.id)]=bn; }
+    else { bn.id=genId("bn", ten, state.benhnhan.map(b=>b.id)); state.benhnhan.push(bn); }
+    await persistOne("benhnhan", bn);
+    selectedBenhNhanId=bn.id; bnFormMode=null; ov.remove();
+    const c=cheDoLay(bn); c.than=(cd==="st"); c.ibs=(cd==="ibs");
+    clearBanner(); render();
+    setTimeout(()=>document.getElementById("btn-mau")?.click(),60);
+  };
+  $("nn-ten")?.focus();
+}
 function emptyBenhNhanForm(){
   return {ten:"",tuoi:"",gioi_tinh:"nu",benh_ly:"",can_nang_kg:"",chieu_cao_cm:"",bmi_muc_tieu:21,
     muc_do_van_dong:"vua", tinh_trang_dac_biet:[], giai_doan_benh:"chua_loc_may", thuoc_dang_dung:"",
@@ -5823,7 +6038,7 @@ function gvAdjRender(){
   let tl={}; try{ tl=JSON.parse(el.dataset.gv||"{}"); }catch(e){}
   const sh=gvTyLe(keys,tl);
   const totEl=document.getElementById("bn-gv-tot");
-  if(!keys.length){ el.innerHTML='<div class="hint" style="display:block">Chưa chọn loại gia vị nào → thực đơn sẽ không có gia vị. Tick loại gia vị ở trên để chia Natri.</div>'; if(totEl) totEl.innerHTML=""; return; }
+  if(!keys.length){ el.innerHTML=""; if(totEl) totEl.innerHTML=""; return; }   // chưa tick loại gia vị nào → không hiện gì
   if(!NA_T){ el.innerHTML='<div class="hint" style="display:block">Nhập Natri mục tiêu để tính lượng gia vị/ngày.</div>'; if(totEl) totEl.innerHTML=""; return; }
   let cum=0; const segs=keys.map(k=>{ const w=sh[k]; cum+=w; return `<div class="gva-seg" style="width:${w}%;background:${GVA_COL[k]}">${w>=6?GV_DEF[k].ten:""}</div>`; }).join("");
   cum=0; const hds=keys.slice(0,-1).map((k,i)=>{ cum+=sh[k]; return `<div class="gva-h" data-i="${i}" style="left:${cum}%" title="Kéo để đổi tỉ lệ"></div>`; }).join("");
@@ -6129,6 +6344,26 @@ function chiaNcKhoaiBap(tong){
   return {sang:s, trua:s, toi:s, phu};
 }
 // Gợi ý phân phối bữa ăn (Sáng/Trưa/Tối/Phụ) — chỉ là điểm khởi đầu, tiết chế viên luôn chỉnh tay tự do được (theo yêu cầu 23/09/2026)
+/* V336: logic chỉnh bảng phân phối cữ DÙNG CHUNG cho hồ sơ đầy đủ và Nhập nhanh.
+   get(slot)→số, set(slot,giaTri). Chỉnh Sáng/Phụ của nhóm chính → Trưa/Tối nhảy lại (số tròn), nếu Sáng+Phụ vượt tổng thì Phụ (hoặc Sáng) giảm lại, không để âm.
+   Nhóm còn lại (sữa, trái cây, hạt…): chỉnh Sáng/Trưa/Tối → Phụ tự nhận phần còn lại (≥0). */
+const PP_NHOM_CHINH=["ngu_coc","dam","rau","dau_mo","dau_hat"];
+function ppTuCanBang(gid, slot, tong, get, set, giong){
+  const f=sl=>parseFloat(String(get(sl)).replace(",","."))||0;
+  if(PP_NHOM_CHINH.includes(gid)){
+    if(slot!=="sang" && slot!=="phu") return;
+    let sang=f("sang"), phu=f("phu");
+    if(sang>tong+1e-9){ sang=Math.max(0,round1(tong)); set("sang",sang); }
+    if(phu>tong+1e-9){ phu=Math.max(0,round1(tong)); set("phu",phu); }
+    if(sang+phu>tong+1e-9){ if(slot==="sang"){ phu=Math.max(0,round1(tong-sang)); set("phu",phu); } else { sang=Math.max(0,round1(tong-phu)); set("sang",sang); } }
+    const rem=Math.max(0, tong-sang-phu);
+    let x=(gid==="ngu_coc")?Math.floor(rem/2*2+1e-9)/2:round1(rem/2); while(x>0&&2*x>rem+1e-9) x=round1(x-0.1);
+    set("trua",x); set("toi", giong?x:Math.max(0,round1(rem-x)));
+  } else if(slot==="sang"||slot==="trua"||slot==="toi"){
+    const t=giong?f("trua"):f("toi");
+    set("phu", Math.max(0, round1(tong-f("sang")-f("trua")-t)));
+  }
+}
 function goiYPhanPhoiBua(bn){
   const computed = computePhanTraoDoi(bn);
   const tong = {};
@@ -6307,10 +6542,10 @@ function goiYCheDo(bn){
   const purin=kem.includes("tau"), dtd=kem.includes("dtd"), phospho=(!isNaN(pv)&&pv>NGUONG_XN.phospho.max);
   return {than:{on:than,why:ly.join("; ")}, ibs:{on:ibs,why:ibsLy}, purin:{on:purin}, dtd:{on:dtd}, phospho:{on:phospho}, oxalat:{on:false}};
 }
-let cheDoXay = {bnId:null,sig:"",than:false,ibs:false,purin:false,dtd:false,phospho:false,oxalat:false,cungMon:false};
+let cheDoXay = {bnId:null,sig:"",than:false,ibs:false,purin:false,dtd:false,phospho:false,oxalat:false,cungMon:false,donCom:false};
 function cheDoLay(bn){
   const g=goiYCheDo(bn), sig=JSON.stringify([g.than.on,g.ibs.on,g.purin.on,g.dtd.on,g.phospho.on]);
-  if(cheDoXay.bnId!==bn.id || cheDoXay.sig!==sig) cheDoXay={bnId:bn.id,sig,than:g.than.on,ibs:g.ibs.on,purin:g.purin.on,dtd:g.dtd.on,phospho:g.phospho.on,oxalat:false,cungMon:false};
+  if(cheDoXay.bnId!==bn.id || cheDoXay.sig!==sig) cheDoXay={bnId:bn.id,sig,than:g.than.on,ibs:g.ibs.on,purin:g.purin.on,dtd:g.dtd.on,phospho:g.phospho.on,oxalat:false,cungMon:false,donCom:false};
   return cheDoXay;
 }
 function kaliNhomHtml(bn,g,tieuDe,nhanTatCa){
@@ -6353,7 +6588,7 @@ function loaiTruBlockHtml(bn,f){
 function cungMonHtml(bn){
   if(!bn) return "";
   const c=cheDoLay(bn);
-  return `<div class="cd-wrap cd-cm"><div class="cd-chips"><label class="cd-tg"><input type="checkbox" id="cd-cungmon" ${c.cungMon?"checked":""}><i></i><span>Trưa và Tối cùng món</span></label></div></div>`;
+  return `<div class="cd-wrap cd-cm"><div class="cd-chips"><label class="cd-tg"><input type="checkbox" id="cd-cungmon" ${c.cungMon?"checked":""}><i></i><span>Trưa và Tối cùng món</span></label><label class="cd-tg" title="Khoai/bắp, đậu và hạt có dầu của cữ phụ được nấu độn vào cơm Trưa và Tối (chia 50:50)"><input type="checkbox" id="cd-doncom" ${c.donCom?"checked":""}><i></i><span>Độn vào cơm</span></label></div></div>`;
 }
 function cheDoPanelHtml(bn){
   if(!bn) return "";
@@ -6385,8 +6620,9 @@ function cheDoNoteText(c){
 }
 function wireCheDo(bn){
   const upd=()=>{};
-  [["cd-than","than"],["cd-ibs","ibs"],["cd-purin","purin"],["cd-dtd","dtd"],["cd-phospho","phospho"],["cd-oxalat","oxalat"],["cd-cungmon","cungMon"]].forEach(([id,k])=>{
-    document.getElementById(id)?.addEventListener("change",e=>{ cheDoLay(bn)[k]=e.target.checked; upd(); });
+  [["cd-than","than"],["cd-ibs","ibs"],["cd-purin","purin"],["cd-dtd","dtd"],["cd-phospho","phospho"],["cd-oxalat","oxalat"],["cd-cungmon","cungMon"],["cd-doncom","donCom"]].forEach(([id,k])=>{
+    document.getElementById(id)?.addEventListener("change",e=>{ cheDoLay(bn)[k]=e.target.checked; upd();
+      if(k==="donCom" && typeof lastMau!=="undefined" && lastMau && lastMau.bn===bn.id && !lastMau.data?.error){ lastMau.a4ed={}; lastMau.data=nv2MauData(bn,lastMau.mode); render(); } });
   });
   upd();
   const luuKali=()=>{
@@ -6942,15 +7178,26 @@ function refreshBangPhanPhoi(){
   if(!body) return;
   const bn = docFormBenhNhan();
   const computed = computePhanTraoDoi(bn);
+  let prevTong=null; try{ prevTong = body.dataset.tongPrev ? JSON.parse(body.dataset.tongPrev) : null; }catch(e){}
+  const curTong={}; let goiY=null;
   body.querySelectorAll("tr[data-gid]").forEach(tr=>{
     const gid = tr.getAttribute("data-gid");
     const def = PHAN_TRAO_DOI[gid];
     const tongPhan = def.residual ? (computed[gid]||0) : (parseFloat((bn.food_portions||{})[gid])||0);
+    // V336: tổng phần của nhóm (hoặc chế độ Ngũ cốc) đổi ở bảng trên → bảng phân phối cữ của nhóm đó tự chia lại ngay
+    { const key = tongPhan+"|"+(gid==="ngu_coc"?cheDoDamHienTai(bn).nc:""); curTong[gid]=key;
+      if(prevTong && prevTong[gid]!==undefined && prevTong[gid]!==key){
+        goiY = goiY || goiYPhanPhoiBua(bn); const v = goiY[gid]||{sang:0,trua:0,toi:0,phu:0}, giong = !!document.getElementById("bn-giongnhau")?.checked;
+        const set=(sl,x)=>{ const el=tr.querySelector(`.bn-pp[data-slot="${sl}"]`); if(el) el.value=round1(x); };
+        set("sang",v.sang); set("trua",v.trua); set("toi",giong?v.trua:v.toi); set("phu",v.phu);
+        if(gid==="ngu_coc"){ delete body.dataset.ncAuto; }
+      } }
     tr.querySelector('[data-role="tong"]').textContent = tongPhan;
     const conEl = tr.querySelector('[data-role="con"]'), conV = tinhConPhanPhoi(gid, tongPhan, body);
     conEl.textContent = conV;
     conEl.classList.toggle("pp-con-lech", Math.abs(conV)>=0.05);   // V159: còn ≠ 0 (âm = chia vượt, dương = chưa chia hết) → tô đỏ
   });
+  body.dataset.tongPrev = JSON.stringify(curTong);
   const tongEl = document.getElementById("bn-bangsophan-tong-cu");
   if(tongEl) tongEl.textContent = `Tổng quy đổi hiện tại: Glucid ${computed.tong.glucid}g · Protid ${computed.tong.protid}g · Lipid ${computed.tong.lipid}g — Mục tiêu: Glucid ${bn.target_carb||0}g · Protid ${bn.target_protein||0}g · Lipid ${bn.target_lipid||0}g.`;
 }
@@ -7359,15 +7606,10 @@ function wireBangSoPhanVaPhanPhoi(){
       const toiEl = bangPhanPhoiArea.querySelector(`.bn-pp-toi[data-gid="${gid}"]`);
       if(toiEl) toiEl.value = e.target.value;
     }
-    // V307: chỉnh Sáng/Phụ của nhóm chính → Trưa/Tối tự nhảy lại (số tròn đơn vị) để phần còn lại không bị âm
-    if((slot==="sang"||slot==="phu") && ["ngu_coc","dam","rau","dau_mo","dau_hat"].includes(gid)){
-      const g = sl => bangPhanPhoiArea.querySelector(`.bn-pp[data-gid="${gid}"][data-slot="${sl}"]`);
+    { const g = sl => bangPhanPhoiArea.querySelector(`.bn-pp[data-gid="${gid}"][data-slot="${sl}"]`);
       const bn0 = docFormBenhNhan(), comp = computePhanTraoDoi(bn0), def0 = PHAN_TRAO_DOI[gid];
       const tong = def0.residual ? (comp[gid]||0) : (parseFloat((bn0.food_portions||{})[gid])||0);
-      const rem = Math.max(0, tong - (parseFloat(g("sang").value)||0) - (parseFloat(g("phu").value)||0));
-      let x = (gid==="ngu_coc") ? Math.floor(rem/2*2+1e-9)/2 : round1(rem/2); while(x>0 && 2*x>rem+1e-9) x = round1(x-0.1);
-      g("trua").value = x; g("toi").value = giongNhau ? x : Math.max(0, round1(rem - x));
-    }
+      ppTuCanBang(gid, slot, tong, sl=>g(sl).value, (sl,v)=>{ g(sl).value=v; }, !!giongNhau); }
     refreshBangPhanPhoi();
   });
   bangPhanPhoiArea?.addEventListener("change",(e)=>{
