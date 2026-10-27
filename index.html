@@ -246,7 +246,7 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--in
 .vck-tag-fix{padding:2px 10px;background:var(--surface-2);border:1px solid var(--border);color:var(--ink-soft);font-weight:600;}
 .vck-all{background:var(--accent);color:var(--accent-ink);}
 .vck-all:hover{filter:brightness(1.1);}
-.vck-all[data-all="1"]{background:var(--surface-2);color:var(--ink-soft);border-color:var(--border);}
+.vck-all[data-all="1"]{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);}
 .vck-def{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);}
 .vck-def:hover{background:var(--accent);color:var(--accent-ink);}
 .vck-clr{background:var(--danger-soft);color:var(--danger);border-color:color-mix(in srgb,var(--danger) 30%,transparent);}
@@ -287,7 +287,15 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--in
 .cd-caret:hover{background:rgba(255,255,255,.4);}
 .cd-lt-body{margin-top:10px;}
 .lt-hi{color:var(--danger);font-weight:700;}
-.nv2-nm{cursor:pointer;}
+.nv2-nm,.nv2-mon{cursor:pointer;}
+.nv2-chg{box-shadow:inset 0 0 0 2px #d9a400;}
+.nv2-ed:focus{outline:2px solid #0e6b78;outline-offset:-2px;}
+.nv2-lb{cursor:text;}
+.nv2-lb:hover{outline:1.5px dashed #0e6b78;outline-offset:-2px;}
+.nv2-lb:focus{outline:2px solid #0e6b78;outline-offset:-2px;}
+.nv2-kt{background:#fde3d6!important;color:#b00020!important;}
+.nv2-kt[data-ktmsg]::after{content:"⚠ Đã đổi nguyên liệu — kiểm tra lại tên món";display:block;font-size:11.5px;font-weight:600;margin-top:4px;}
+.nv2-mon:hover{text-decoration:underline dotted;}
 .nv2-nm:hover{background:#e6f2ec!important;text-decoration:underline dotted;}
 .nm-pop{position:fixed;z-index:80;width:350px;max-width:calc(100vw - 24px);background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:14px;box-shadow:0 14px 36px rgba(0,0,0,.22);padding:12px;}
 .nm-pop .nm-t{font-size:12px;color:var(--ink-soft);margin-bottom:6px;}
@@ -513,6 +521,7 @@ body.show-hints p.hint, body.show-hints .hint-long{display:block;}
    ĐẦU trang, ngoài tầm nhìn, nên cảm giác như không có phản hồi gì. Chuyển sang sticky để banner luôn
    nổi ngay trên cùng khung nhìn hiện tại, dù đang cuộn ở bất kỳ đâu trong trang, không cần cuộn lên lại.*/
 #banner-area{position:sticky;top:0;z-index:30;background:var(--bg);}
+#nv2-kq-top{scroll-margin-top:90px;}
 #banner-area:not(:empty){padding-top:10px;margin-bottom:-10px;}
 #banner-area .banner{box-shadow:0 2px 10px rgba(0,0,0,.12);}
 
@@ -577,6 +586,10 @@ body.show-hints p.hint, body.show-hints .hint-long{display:block;}
 /* 09/10/2026: hộp xác nhận chặn "Lưu hồ sơ" khi có thay đổi Xét nghiệm/Mục tiêu chưa chốt mốc lịch sử
    (xem timThayDoiChuaChotMoc/hienXacNhanChuaChotMoc) — overlay TỰ DỰNG vì confirm()/alert() của trình
    duyệt không chạy được trong môi trường Claude Artifact. [hidden] dùng đúng quy tắc !important sẵn có. */
+.btn:not(:disabled):active{transform:scale(.96);filter:brightness(.92);}
+.btn.dang-chay{pointer-events:none;opacity:.85;}
+.btn .spin{display:inline-block;width:13px;height:13px;margin-right:7px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:btnspin .7s linear infinite;}
+@keyframes btnspin{to{transform:rotate(360deg);}}
 .xacnhan-overlay{position:fixed;inset:0;background:rgba(10,20,15,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;}
 .xacnhan-box{background:var(--surface);border-radius:12px;max-width:480px;width:100%;padding:20px 22px;box-shadow:0 12px 40px rgba(0,0,0,.3);}
 .xacnhan-title{font-family:'Fraunces',Georgia,serif;font-size:17px;font-weight:600;color:var(--danger);margin-bottom:10px;}
@@ -3134,8 +3147,8 @@ const NV2 = (function(){
     const ncLow = (opt.ncLow!=null) ? !!opt.ncLow : ((bn.che_do_dam_tay && bn.nc_che_do) ? bn.nc_che_do==="khoai_bap" : thanCoc);
     const rauLow = (opt.rauLow!=null) ? !!opt.rauLow : ((bn.che_do_dam_tay && bn.rau_che_do) ? bn.rau_che_do==="rau_it_dam" : thanCoc);
     const pRau = rauLow?1.5:2, pNC = ncLow?1.5:2;
-    const rau = (fp.rau!=null && fp.rau!=="") ? +fp.rau : 5, tc = (fp.trai_cay!=null && fp.trai_cay!=="") ? +fp.trai_cay : 2;
-    const hat = (fp.hat_oc_cho!=null && fp.hat_oc_cho!=="") ? +fp.hat_oc_cho : 1;
+    const rau = (+fp.rau)||0, tc = (+fp.trai_cay)||0;   // V305: KHÔNG còn số mặc định 5/2/1 — chỉ theo số phần ghi trong hồ sơ (trống = 0, đúng như Bảng số phần hiển thị)
+    const hat = (+fp.hat_oc_cho)||0;
     const H = {E:231.6*hat, P:2.4*hat, L:22.8*hat, C:4.2*hat, Na:0.6*hat, K:132.3*hat};
     // số đơn vị (Pha 1)
     // V109: sữa / TP bổ sung / bột đạm-MCT-MD đã chọn trong hồ sơ — trừ khỏi mục tiêu trước khi chia đơn vị, và cộng vào từng ngày như món cố định ở bữa phụ
@@ -3150,14 +3163,16 @@ const NV2 = (function(){
     // chia đơn vị vào bữa: mặc định theo cơ cấu chuyên gia đã chốt; nếu hồ sơ có meal_distribution riêng thì dùng
     const md = bn.meal_distribution||{};
     const sumMd = g => md[g] ? ((+md[g].sang||0)+(+md[g].trua||0)+(+md[g].toi||0)+(+md[g].phu||0)) : 0;
-    const share = (gid,tot,def)=>{
+    const thieuPB=[];   // V305: nhóm có số phần nhưng hồ sơ chưa phân bổ vào các cữ → KHÔNG tự chia theo tỉ lệ mặc định nữa, báo thiếu
+    const share = (gid,tot,def,ten)=>{
       if(sumMd(gid)>0){ const m=md[gid]; return {sang:+m.sang||0,trua:+m.trua||0,toi:+m.toi||0,phu:+m.phu||0}; }
-      return {sang:tot*def[0],trua:tot*def[1],toi:tot*def[2],phu:tot*def[3]};
+      if(tot>1e-6) thieuPB.push(ten);
+      return {sang:0,trua:0,toi:0,phu:0};
     };
-    const mdNC = share("ngu_coc",nc, ncLow ? [0.25,0.25,0.25,0.25] : [2.2/11.115,2.8/11.115,2.8/11.115,3.3/11.115]);   // V156: chế độ "Cữ phụ khoai/bắp" → Sáng/Trưa/Tối/Phụ mỗi cữ 25% tổng đơn vị Ngũ cốc
-    const mdDam= share("dam",dam,[0.4/1.861,0.73/1.861,0.73/1.861,0]);
-    const mdRau= share("rau",rau,[0.2,0.4,0.4,0]);
-    const mdDau= share("dau_mo",dau,[1.3/6.367,2.55/6.367,2.55/6.367,0]);
+    const mdNC = share("ngu_coc",nc,null,"Ngũ cốc");   // V156: chế độ "Cữ phụ khoai/bắp" → Sáng/Trưa/Tối/Phụ mỗi cữ 25% tổng đơn vị Ngũ cốc
+    const mdDam= share("dam",dam,null,"Đạm");
+    const mdRau= share("rau",rau,null,"Rau");
+    const mdDau= share("dau_mo",dau,null,"Dầu/mỡ");
     const U = {
       sang:{nc:mdNC.sang,dam:mdDam.sang,rau:mdRau.sang,dau:mdDau.sang},
       trua:{nc:mdNC.trua,dam:mdDam.trua,rau:mdRau.trua,dau:mdDau.trua},
@@ -3165,7 +3180,7 @@ const NV2 = (function(){
     };
     const phuDv = mdNC.phu;
     const kaliHan = K_CAP>0 && K_CAP<=2600;                           // ca có trần Kali (suy thận…)
-    return {kho,tpMap,bn,kcal,P_T,G_T,L_T,NA_T,K_CAP,H,U,phuDv,units:{nc,dam,dau,rau,tc,hat},TC_G:tc*80,kaliHan,sup,cungMon:!!opt.cungMon,ibs:!!opt.ibs,
+    return {kho,tpMap,bn,kcal,P_T,G_T,L_T,NA_T,K_CAP,H,U,phuDv,thieuPB,units:{nc,dam,dau,rau,tc,hat},TC_G:tc*80,kaliHan,sup,cungMon:!!opt.cungMon,ibs:!!opt.ibs,
             chiSo:Array.isArray(opt.chiSo)?opt.chiSo:["xo","sat","Zn_mg"],
             gvIds:(bn.gia_vi_loai&&bn.gia_vi_loai.length)?bn.gia_vi_loai:GV_DEFAULT, klt:(bn.kali_loai_tru||[]).concat(opt.purin?(bn.purin_loai_tru||[]):[], opt.phospho?(bn.phospho_loai_tru||[]):[], opt.oxalat?(bn.oxalat_loai_tru||[]):[])};
   }
@@ -3216,7 +3231,8 @@ const NV2 = (function(){
     return [out,cols];
   }
   function phuItems(cfg,opt,dv){
-    dv = dv||cfg.phuDv||BASE_DV;
+    if(dv==null && cfg.phuDv===0) return [];   // V301: hồ sơ để cữ phụ trưa = 0 đơn vị → KHÔNG có cữ phụ trưa (trước đây vẫn cộng cữ mặc định ~270 kcal)
+    if(dv==null) dv = cfg.phuDv;   // V305: không còn mặc định 3 đơn vị
     return OPT[opt].rows.map(r=>{
       const [nm,tid,g0,kind,gdv] = r; let g = g0; if(kind==="bal") g = Math.max(0, g0 + (dv-BASE_DV)*gdv);
       const i = itemOf(cfg,tid,g); i.grp="Phụ trưa"; i.disp=nm; i.kind=kind; return i;
@@ -3318,13 +3334,14 @@ const NV2 = (function(){
     const combos=buildCombos(cfg,pool,pc), lines=[];
     const opts=Array.from(new Set(pattern)).filter(o=>pc.OV[o]);
     const frs=FRUITS.map(x=>x[0]).filter(id=>pc.FV[id]).slice(0,3);
-    const cnt={f_thap:0,f_cao:0,nl_thap:0,nl_cao:0,nguyenlieu:0,dv_thap:0,dv_cao:0,red:0,ok:0}; const sA={}; pool.sang.forEach(d=>{ sA[d.id]=meal(cfg,d,'sang')[0].filter(i=>isAnimal(cfg,i)).reduce((a,i)=>a+i.P,0); }); let tot=0, fmin=1e9, fmax=-1e9, esum=0;
+    const cnt={f_thap:0,f_cao:0,nl_thap:0,nl_cao:0,nguyenlieu:0,dv_thap:0,dv_cao:0,red:0,ok:0}; const sA={}; pool.sang.forEach(d=>{ sA[d.id]=meal(cfg,d,'sang')[0].filter(i=>isAnimal(cfg,i)).reduce((a,i)=>a+i.P,0); }); let tot=0, fmin=1e9, fmax=-1e9, esum=0; const cp={sang:0,trua:0,toi:0,fr:0,hat:0,phu:0,sup:0};
     const byId={}; pool.sang.concat(pool.tt).forEach(d=>{ byId[d.id]=d; });
     const step=Math.max(1,Math.floor(combos.length/1500));
     for(let ci=0;ci<combos.length;ci+=step){
       const [s,l,d]=combos[ci];
       for(const fr of frs) for(const o of opts){
         const {f,T}=dayLinear(cfg,pc,s,l,d,fr,o); tot++; esum+=T[0]; fmin=Math.min(fmin,f); fmax=Math.max(fmax,f);
+        cp.sang+=pc.SV[s][0]; cp.trua+=pc.TV[l][0][0]+f*pc.TV[l][1][0]; cp.toi+=pc.TV[d][0][0]+f*pc.TV[d][1][0]; cp.fr+=pc.FV[fr][0]; cp.hat+=pc.HV[0]; cp.phu+=pc.OV[o][0]; cp.sup+=pc.SUPV[0];
         if(f<0.4){ cnt.f_thap++; continue; } if(f>2.2){ cnt.f_cao++; continue; }
         const e=(T[0]-cfg.kcal)/cfg.kcal; if(e<-0.12){ cnt.nl_thap++; continue; } if(e>0.12){ cnt.nl_cao++; continue; }
         const ids=new Set([...pc.meta[s].ids,...pc.meta[l].ids,...pc.meta[d].ids,fr,...pc.meta["o"+o]]); ids.delete(null);
@@ -3342,6 +3359,7 @@ const NV2 = (function(){
     if(cnt.red) lines.push(pct(cnt.red)+" tổ hợp có thịt đỏ quá nhiều trong 1 ngày (giới hạn tuần dưới 480 g).");
     if(cnt.nguyenlieu) lines.push(pct(cnt.nguyenlieu)+" tổ hợp có dưới 10 nguyên liệu khác nhau trong ngày.");
     lines.push("Số tổ hợp hợp lệ trước bước xếp tuần: "+Math.round(cnt.ok*step)+" / "+Math.round(tot*step)+" (trong đó mới chỉ tính điều kiện trong ngày; còn điều kiện không lặp món/đạm chính trong tuần).");
+    { const a=k=>Math.round(cp[k]/Math.max(1,tot)); lines.push("Năng lượng trung bình mỗi ngày (kcal): bữa sáng "+a("sang")+" + trưa "+a("trua")+" + tối "+a("toi")+" + trái cây "+a("fr")+" + hạt "+a("hat")+" + cữ phụ trưa "+a("phu")+" + sữa/TP bổ sung "+a("sup")+" = "+Math.round(esum/Math.max(1,tot))+" (mục tiêu "+cfg.kcal+"). Phần nào quá lớn so với số phần trong hồ sơ thì chỉnh phần đó."); }
     lines.push("Khoảng hệ số bù đạm tìm được: "+fmin.toFixed(2)+" – "+fmax.toFixed(2)+"; năng lượng trung bình "+Math.round(esum/tot)+" kcal (mục tiêu "+cfg.kcal+").");
     return lines;
   }
@@ -3421,7 +3439,7 @@ const NV2 = (function(){
     const [s,l,d]=sel.c; const S=byId[s],L=byId[l],Dm=byId[d];
     const pc=cfg.__pc; const {f}=dayLinear(cfg,pc,s,l,d,sel.fr,sel.o);
     const sm=meal(cfg,S,"sang")[0], lm=meal(cfg,L,"trua",f)[0], dm=meal(cfg,Dm,"toi",f)[0];
-    const pt=phuItems(cfg,sel.o).concat(supItems(cfg));
+    const phuFood=phuItems(cfg,sel.o), pt=phuFood.concat(supItems(cfg));
     const frT=cfg.tpMap[sel.fr];
     const fr=itemOf(cfg,sel.fr,cfg.TC_G);
     const hat=itemOf(cfg,null,0); hat.id=null; hat.ten="Macca/óc chó (giá trị nhóm)"; hat.g=30*cfg.units.hat;
@@ -3431,7 +3449,7 @@ const NV2 = (function(){
     all.forEach(i=>{ KEYS.forEach(k=>{ T[k]+=i[k]; }); cfg.chiSo.forEach(k=>{ T.x[k]+=i.x[k]; }); });
     gv.forEach(x=>{ T.Na+=x.Na; });
     const an=all.filter(i=>isAnimal(cfg,i)).reduce((s,i)=>s+i.P,0);
-    return {idx,S,L,D:Dm,fr:{id:sel.fr,ten:frT.ten},opt:sel.o,f,sm,fr_item:fr,hat,lm,dm,pt,gv,T,dvShare:an/(T.P||1)*100,
+    return {idx,S,L,D:Dm,fr:{id:sel.fr,ten:frT.ten},opt:sel.o,f,sm,fr_item:fr,hat,lm,dm,pt,foodPhu:phuFood.length,gv,T,dvShare:an/(T.P||1)*100,
             phuGroups:MON_GROUPS[sel.o]};
   }
 
@@ -3441,6 +3459,7 @@ const NV2 = (function(){
     const cfg=config(kho,bn,o);
     const warnings=[];
     if(!cfg.kcal||!cfg.P_T||!cfg.G_T||!cfg.L_T) return {error:"Hồ sơ thiếu mục tiêu năng lượng/đạm/glucid/lipid"};
+    if(cfg.thieuPB&&cfg.thieuPB.length) return {error:"Bảng số phần của hồ sơ chưa phân bổ vào các cữ (Sáng/Trưa/Tối/Phụ) cho nhóm: "+cfg.thieuPB.join(", ")+". Hãy vào hồ sơ → Bảng số phần, nhập số phần từng cữ (hoặc bấm “Áp dụng gợi ý”) rồi Lưu — hệ thống không tự chia mặc định."};
     if(cfg.units.dam<=0.0001) return {error:"Các nhóm đã nhập số phần (kể cả sữa/TP bổ sung/bột đạm, hạt, đậu…) đã dùng hết hoặc vượt mục tiêu Protein/Glucid của hồ sơ nên không còn phần Đạm để xếp món (dòng Đạm ở Bảng số phần đang bằng 0 hoặc âm). Giảm bớt số phần ở các nhóm trên rồi tạo lại."};
     const pool=buildPool(cfg);
     if(!pool.sang.length||!pool.tt.length) return {error:"Kho món chưa đủ món dùng được (sáng: "+pool.sang.length+", trưa/tối: "+pool.tt.length+")",excluded:pool.excluded};
@@ -3487,6 +3506,12 @@ const NV2 = (function(){
    XUẤT EXCEL V2 — 3 sheet theo mẫu chuyên gia (ST_T1xx): Menu | Chi tiết theo cữ | Check TPDD
    Dùng ExcelJS (có màu, gộp ô, công thức). Số hiển thị là số nguyên, không dấu phẩy.
    ============================================================ */
+/* V303: các nhãn cố định trong bảng Chi tiết theo cữ / Menu cho phép sửa; sửa 1 chỗ đổi tất cả các ngày (và file Excel, ảnh, PDF) */
+const NV2_LB_DEF = {id:"ST_T1", cTime:"Thời gian", cMon:"Món", cTp:"Thành phần", cKl:"Khối lượng (g)", cUoc:"Ước lượng",
+  lSang:"Sáng", lPhuSang:"Phụ sáng", lTrua:"Trưa", lTruaToi:"Trưa/tối\n(lượng ăn giống nhau)", lPhuTrua:"Phụ trưa", lToi:"Tối",
+  gvTitle:"Tổng lượng gia vị/ngày", note:"Lưu ý:\n- Bún/miến/nui/mì: cân dạng khô hay tươi/luộc\n- Thịt/cá/tôm: không xương, không da, không vỏ\n- Đảm bảo đủ lượng dầu\n- Ăn đủ các cữ phụ như: Hạt, khoai/bắp, trái cây, sữa\n*Những trường hợp 2 cữ trưa/tối giống nhau: nhân đôi khối lượng nếu nấu chung 1 lần"};
+let nv2LbPref = {}; try{ nv2LbPref = JSON.parse(localStorage.getItem("tctd_lbl")||"{}")||{}; }catch(e){}
+function nv2LbLuu(){ try{ localStorage.setItem("tctd_lbl",JSON.stringify(nv2LbPref)); }catch(e){} }
 function nv2BuildWorkbook(ExcelJS, bn, v2, o){
   o = o||{};
   const NVX = NV2, MAP = NVX.MAP, r10 = NVX.r10;
@@ -3501,7 +3526,8 @@ function nv2BuildWorkbook(ExcelJS, bn, v2, o){
   const code = i => i.id ? (o.maOf?o.maOf(i.id):null)||"—" : "—";
   const pG = Math.round(cfg.G_T*4/cfg.kcal*100), pP = Math.round(cfg.P_T*4/cfg.kcal*100), pL = 100-pG-pP;
   const PR = pG+":"+pP+":"+pL;
-  const TITLE = String(bn.ten||"").toUpperCase()+"\n"+cfg.kcal+" kcal (%G:%P:%L = "+PR+")";
+  const LB = Object.assign({}, NV2_LB_DEF, v2.lbl||{});
+  const TITLE = LB.title!=null ? LB.title : String(bn.ten||"").toUpperCase()+"\n"+cfg.kcal+" kcal (%G:%P:%L = "+PR+")";
   const FONT="Arial";
   const fill = c => ({type:"pattern",pattern:"solid",fgColor:{argb:"FF"+c}});
   const COL = {BANNER:"E8737F",HEAD:"C6E0B4",CYAN:"BDE5EA",NOTE:"FFF2CC",SUB:"DDEBF7",GREEN:"E2EFDA",PINK:"F4B6D6",YEL:"FFF2CC",GREY:"F2F2F2",NAVY:"1F4E78"};
@@ -3535,15 +3561,16 @@ function nv2BuildWorkbook(ExcelJS, bn, v2, o){
   [14,28,28,28,28,28,28,28].forEach((w,i)=>{ ws.getColumn(i+1).width=w; });
   const t1 = ws.getCell(1,1); t1.value="THỰC ĐƠN "+days.length+" NGÀY — "+String(bn.ten||"").toUpperCase()+" ("+cfg.kcal+" kcal, G:P:L = "+PR+")";
   t1.font=F({bold:true,size:13,color:{argb:"FF1F4E78"}}); t1.alignment=CEN; ws.mergeCells(1,1,1,days.length+1); ws.getRow(1).height=26;
-  cell(ws,3,1,"Thời gian",F({bold:true}),COL.HEAD);
+  cell(ws,3,1,LB.cTime,F({bold:true}),COL.HEAD);
   days.forEach((d,j)=>{ cell(ws,3,j+2,"Ngày "+(j+1)+" ("+dayLabel(j)+")",F({bold:true}),COL.HEAD); });
+  const LBMENU={"Sáng":LB.lSang,"Phụ sáng":LB.lPhuSang,"Trưa":LB.lTrua,"Phụ trưa":LB.lPhuTrua,"Tối":LB.lToi};
   ["Sáng","Phụ sáng","Trưa","Phụ trưa","Tối"].forEach((lab,ri)=>{
-    const r=ri+4; cell(ws,r,1,lab,F({bold:true}),(lab==="Sáng"||lab==="Trưa"||lab==="Tối")?COL.HEAD:COL.CYAN);
+    const r=ri+4; cell(ws,r,1,LBMENU[lab],F({bold:true}),(lab==="Sáng"||lab==="Trưa"||lab==="Tối")?COL.HEAD:COL.CYAN);
     days.forEach((d,j)=>{
       let t;
       if(lab==="Sáng") t=d.S.ten; else if(lab==="Phụ sáng") t="Trái cây: "+frName(d)+"\nHạt macca/óc chó";
       else if(lab==="Trưa") t=monLines(d.L,"trua"); else if(lab==="Tối") t=monLines(d.D,"toi");
-      else t=NVX.MON_GROUPS[d.opt].map(g=>g[0]).join("\n");
+      else t=(d.foodPhu!==0&&d.pt&&d.pt.length)?NVX.MON_GROUPS[d.opt].map(g=>g[0]).join("\n"):"—";
       cell(ws,r,j+2,t,F());
     });
     ws.getRow(r).height=(lab==="Trưa"||lab==="Tối")?78:48;
@@ -3555,11 +3582,11 @@ function nv2BuildWorkbook(ExcelJS, bn, v2, o){
   [20,34,42,22].forEach((w,i)=>{ w2.getColumn(i+1).width=w; });
   let r=1;
   days.forEach((dy,k)=>{
-    const id="ST_T1"+String(k+1).padStart(2,"0");
+    const id=LB.id+String(k+1).padStart(2,"0");
     cell(w2,r,1,id,F({bold:true,color:{argb:"FFFFFFFF"}}),COL.BANNER);
     cell(w2,r,2,TITLE,F({bold:true,color:{argb:"FFFFFFFF"}}),COL.BANNER); cell(w2,r,3,null,null,COL.BANNER); w2.mergeCells(r,2,r,3);
-    const dt=dateOf(k); cell(w2,r,4,dt?ddy(dt):"",F({bold:true,color:{argb:"FFFFFFFF"}}),COL.BANNER); w2.getRow(r).height=32; r++;
-    ["Thời gian","Món","Thành phần","Khối lượng (g)"].forEach((h,j)=>cell(w2,r,j+1,h,F({bold:true}),COL.HEAD)); r++;
+    const dt=dateOf(k); cell(w2,r,4,LB.date!=null?LB.date:(dt?ddy(dt):""),F({bold:true,color:{argb:"FFFFFFFF"}}),COL.BANNER); w2.getRow(r).height=32; r++;
+    [LB.cTime,LB.cMon,LB.cTp,LB.cKl].forEach((h,j)=>cell(w2,r,j+1,h,F({bold:true}),COL.HEAD)); r++;
     const block=(label,rows,mon,fl)=>{
       const r0=r, n=rows.length;
       cell(w2,r0,1,label,F({bold:true}),fl); cell(w2,r0,2,mon,F({bold:true}),fl);
@@ -3572,29 +3599,29 @@ function nv2BuildWorkbook(ExcelJS, bn, v2, o){
       { const hb=herbs(d); if(hb.length) rows.push([hb.join(", "),"Tùy chỉnh"]); }
       const dau=its.find(i=>i.grp==="Dầu"); rows.push(["Dầu oliu",Math.round(dau.g)]); return rows;
     };
-    block("Sáng",mealRows(dy.sm,"sang",dy.S),dy.S.ten,null);
+    block(LB.lSang,mealRows(dy.sm,"sang",dy.S),dy.S.ten,null);
     // Phụ sáng: trái cây + hạt
-    { const r0=r; cell(w2,r0,1,"Phụ sáng",F({bold:true}),COL.CYAN); cell(w2,r0+1,1,null,null,COL.CYAN); w2.mergeCells(r0,1,r0+1,1);
+    { const r0=r; cell(w2,r0,1,LB.lPhuSang,F({bold:true}),COL.CYAN); cell(w2,r0+1,1,null,null,COL.CYAN); w2.mergeCells(r0,1,r0+1,1);
       cell(w2,r0,2,"Trái cây",F({bold:true}),COL.CYAN); cell(w2,r0,3,frName(dy),F(),COL.CYAN); cell(w2,r0,4,Math.round(dy.fr_item.g),F(),COL.CYAN);
       cell(w2,r0+1,2,"Hạt",F({bold:true}),COL.CYAN); cell(w2,r0+1,3,"Macca/óc chó",F({bold:true}),COL.CYAN); cell(w2,r0+1,4,Math.round(dy.hat.g),F(),COL.CYAN); r+=2; }
     const tt = nv2TTGiong(dy);
-    block(tt?"Trưa/tối\n(lượng ăn giống nhau)":"Trưa",mealRows(dy.lm,"trua",dy.L),monLines(dy.L,"trua"),null);
+    block(tt?LB.lTruaToi:LB.lTrua,mealRows(dy.lm,"trua",dy.L),monLines(dy.L,"trua"),null);
     // Phụ trưa (nằm ngay sau Trưa), mỗi món một ô Món riêng
     { const pr=phuRows(dy), r0=r, n=pr.length;
       pr.forEach((x,i)=>{ const su=nv2SuaInfo(dy.pt[i]); cell(w2,r0+i,1,null,null,COL.CYAN); cell(w2,r0+i,2,null,null,COL.CYAN); cell(w2,r0+i,3,su?su.pha:x[0],F(),COL.CYAN); cell(w2,r0+i,4,x[1],F(),COL.CYAN); if(su) w2.getCell(r0+i,4).numFmt='0" ml"'; });
-      w2.getCell(r0,1).value="Phụ trưa"; w2.getCell(r0,1).font=F({bold:true}); if(n>1) w2.mergeCells(r0,1,r0+n-1,1);
-      NVX.MON_GROUPS[dy.opt].forEach(([gname,idx])=>{ const a=r0+idx[0]; w2.getCell(a,2).value=gname; w2.getCell(a,2).font=F({bold:true}); if(idx.length>1) w2.mergeCells(a,2,r0+idx[idx.length-1],2); });
-      { const inGrp=new Set(); NVX.MON_GROUPS[dy.opt].forEach(([gname,idx])=>idx.forEach(j=>inGrp.add(j)));
+      if(n){ w2.getCell(r0,1).value=LB.lPhuTrua; w2.getCell(r0,1).font=F({bold:true}); if(n>1) w2.mergeCells(r0,1,r0+n-1,1); }
+      if(n) nv2PhuG(dy).forEach(([gname,idx])=>{ const a=r0+idx[0]; w2.getCell(a,2).value=gname; w2.getCell(a,2).font=F({bold:true}); if(idx.length>1) w2.mergeCells(a,2,r0+idx[idx.length-1],2); });
+      { const inGrp=new Set(); nv2PhuG(dy).forEach(([gname,idx])=>idx.forEach(j=>inGrp.add(j)));
         pr.forEach((x,i)=>{ if(!inGrp.has(i)){ const su=nv2SuaInfo(dy.pt[i]); if(su){ w2.getCell(r0+i,2).value=su.ten; w2.getCell(r0+i,2).font=F({bold:true}); } } }); }
       r=r0+n; }
-    if(!tt) block("Tối",mealRows(dy.dm,"toi",dy.D),monLines(dy.D,"toi"),null);
+    if(!tt) block(LB.lToi,mealRows(dy.dm,"toi",dy.D),monLines(dy.D,"toi"),null);
     // Footer: lưu ý + gia vị (chỉ ghi gia vị có dùng)
     // Footer cân đối: số hàng = 1 (tiêu đề) + số gia vị; ô Lưu ý gộp trọn các hàng đó; chiều cao hàng chia đều để ô Lưu ý đủ chỗ
     const r0=r, nFoot=Math.max(3,gv.length+1);
     for(let rr=r0;rr<r0+nFoot;rr++){ cell(w2,rr,1,null,null,COL.NOTE); cell(w2,rr,2,null,null,COL.NOTE); }
-    let note="Lưu ý:\n- Bún/miến/nui/mì: cân dạng khô hay tươi/luộc\n- Thịt/cá/tôm: không xương, không da, không vỏ\n- Đảm bảo đủ lượng dầu\n- Ăn đủ các cữ phụ như: Hạt, khoai/bắp, trái cây, sữa\n*Những trường hợp 2 cữ trưa/tối giống nhau: nhân đôi khối lượng nếu nấu chung 1 lần";
+    let note=LB.note;
     const nx=w2.getCell(r0,1); nx.value=note; nx.alignment={horizontal:"left",vertical:"middle",wrapText:true,indent:1}; nx.font=F({size:9}); w2.mergeCells(r0,1,r0+nFoot-1,2);
-    cell(w2,r0,3,"Tổng lượng gia vị/ngày",F({bold:true}),COL.SUB); cell(w2,r0,4,null,null,COL.SUB); w2.mergeCells(r0,3,r0,4);
+    cell(w2,r0,3,LB.gvTitle,F({bold:true}),COL.SUB); cell(w2,r0,4,null,null,COL.SUB); w2.mergeCells(r0,3,r0,4);
     gv.forEach((x,i)=>{ cell(w2,r0+1+i,3,x.ten+" ("+x.unit+")"); cell(w2,r0+1+i,4,x.amt); });
     // hàng trống còn lại (khi ít gia vị): gộp thành 1 ô để không còn ô viền lẻ
     const used=1+gv.length; if(nFoot>used){ for(let rr=r0+used;rr<r0+nFoot;rr++){ cell(w2,rr,3,null); cell(w2,rr,4,null); } w2.mergeCells(r0+used,3,r0+nFoot-1,4); }
@@ -3612,14 +3639,14 @@ function nv2BuildWorkbook(ExcelJS, bn, v2, o){
   const TARGET=[cfg.kcal,cfg.P_T,cfg.L_T,cfg.G_T,cfg.NA_T,cfg.K_CAP];
   let q=1;
   days.forEach((dy,k)=>{
-    const id="ST_T1"+String(k+1).padStart(2,"0");
+    const id=LB.id+String(k+1).padStart(2,"0");
     cell(w3,q,1,"Ngày "+(k+1)+" ("+dayLabel(k)+") — "+id,F({bold:true,color:{argb:"FFFFFFFF"}}),COL.NAVY);
     for(let c=2;c<=NC;c++) cell(w3,q,c,null,null,COL.NAVY); w3.mergeCells(q,1,q,NC); q++;
     cols.forEach((h,j)=>cell(w3,q,j+1,h,F({bold:true}),COL.SUB)); q++;
     const first=q;
     const valsOf = i => [i.E,i.P,i.L,i.C,i.Na,i.K].concat(defs.map(x=>(i.x&&i.x[x.key])||0));
     const grp=(label,items)=>{
-      const r0=q, n=items.length;
+      const r0=q, n=items.length; if(!n) return;
       items.forEach((it,i)=>{ cell(w3,r0+i,2,it[0]); cell(w3,r0+i,3,it[1]); cell(w3,r0+i,4,it[2]);
         it[3].forEach((v,j)=>cell(w3,r0+i,5+j,v,F(),null,"0")); cell(w3,r0+i,1,null,null,COL.GREY); });
       cell(w3,r0,1,label,F({bold:true}),COL.GREY); if(n>1) w3.mergeCells(r0,1,r0+n-1,1); q=r0+n;
@@ -3683,18 +3710,20 @@ function nv2BuildSheetsHtml(bn, v2, o){
   const code = i => i.id ? (o.maOf?o.maOf(i.id):null)||"—" : "—";
   const pG = Math.round(cfg.G_T*4/cfg.kcal*100), pP = Math.round(cfg.P_T*4/cfg.kcal*100), pL = 100-pG-pP;
   const PR = pG+":"+pP+":"+pL;
-  const TITLE = String(bn.ten||"").toUpperCase()+"\n"+cfg.kcal+" kcal (%G:%P:%L = "+PR+")";
+  const LB = Object.assign({}, NV2_LB_DEF, v2.lbl||{});
+  const TITLE = LB.title!=null ? LB.title : String(bn.ten||"").toUpperCase()+"\n"+cfg.kcal+" kcal (%G:%P:%L = "+PR+")";
   const COL = {BANNER:"E8737F",HEAD:"C6E0B4",CYAN:"BDE5EA",NOTE:"FFF2CC",SUB:"DDEBF7",GREEN:"E2EFDA",PINK:"F4B6D6",YEL:"FFF2CC",GREY:"F2F2F2",NAVY:"1F4E78"};
   const E = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const BORD = "border:1px solid #7f7f7f;";
   // td: opt = {bg,b,color,al,rs,cs,sz,it,w,h}
   const td = (v,opt)=>{ opt=opt||{};   // opt.unit: hậu tố hiển thị sau số (vd " ml") qua data-unit
-    if(opt.edited) opt.bg="FFE699";
     const st = BORD+"padding:3px 6px;font-family:Arial,sans-serif;font-size:"+(opt.sz||13)+"px;color:"+(opt.color||"#000")+";background:"+(opt.bg?("#"+opt.bg):"#fff")+";"+(opt.ed?"cursor:text;":"")+
       "text-align:"+(opt.al||"center")+";vertical-align:"+(opt.va||"middle")+";"+(opt.b?"font-weight:bold;":"")+(opt.it?"font-style:italic;":"")+(opt.w?"width:"+opt.w+"px;":"")+(opt.h?"height:"+opt.h+"px;":"")+(opt.ws||"");
-    const edAttr = opt.ed ? " class=\"nv2-ed\" contenteditable=\"true\" spellcheck=\"false\" inputmode=\"decimal\" data-ed=\""+E(opt.ed)+"\" title=\"Bấm để sửa khối lượng\"" : "";
-    const nmAttr = opt.nm ? " class=\"nv2-nm\" data-nm=\""+E(opt.nm)+"\" title=\"Bấm để đổi thực phẩm hoặc sửa tên\"" : "";
-    return "<td"+edAttr+nmAttr+(opt.rs>1?" rowspan=\""+opt.rs+"\"":"")+(opt.cs>1?" colspan=\""+opt.cs+"\"":"")+(opt.unit?" data-unit=\""+E(opt.unit)+"\"":"")+" style=\""+st+"\">"+E(v).replace(/\n/g,"<br>")+"</td>";
+    const cls=[]; if(opt.ed) cls.push("nv2-ed"); if(opt.nm) cls.push("nv2-nm"); if(opt.mon) cls.push("nv2-mon"); if(opt.edited) cls.push("nv2-chg"); if(opt.kt) cls.push("nv2-kt"); if(opt.lb) cls.push("nv2-lb");   // nv2-chg / nv2-kt: hiệu ứng CHỈ trên màn hình, bị gỡ khi chụp ảnh/xuất file
+    const edAttr = opt.ed ? " contenteditable=\"true\" spellcheck=\"false\" inputmode=\"decimal\" data-ed=\""+E(opt.ed)+"\" title=\"Bấm để sửa khối lượng\"" : "";
+    const nmAttr = opt.nm ? " data-nm=\""+E(opt.nm)+"\" title=\"Bấm để đổi thực phẩm hoặc sửa tên\"" : "";
+    const monAttr = opt.mon ? " data-mon=\""+E(opt.mon)+"\" title=\"Bấm để sửa tên món / xác nhận giữ tên\"" : "";
+    return "<td"+(cls.length?" class=\""+cls.join(" ")+"\"":"")+edAttr+nmAttr+monAttr+(opt.ktmsg?" data-ktmsg=\"1\"":"")+(opt.lb?" contenteditable=\"true\" spellcheck=\"false\" data-lb=\""+E(opt.lb)+"\" title=\"Bấm để sửa — áp dụng cho tất cả các ngày\"":"")+(opt.rs>1?" rowspan=\""+opt.rs+"\"":"")+(opt.cs>1?" colspan=\""+opt.cs+"\"":"")+(opt.unit?" data-unit=\""+E(opt.unit)+"\"":"")+" style=\""+st+"\">"+E(v).replace(/\n/g,"<br>")+"</td>";
   };
   const table = (inner,cols,lab)=>{ const w=(cols||[]).reduce((a,b)=>a+b,0), L=lab||"Cả bảng", IC=(k,t)=>"<button type=\"button\" class=\"nv2-tbb nv2-ib\" data-tb=\""+k+"\" aria-label=\""+E(t)+"\" title=\""+E(t)+"\">"+(k==="copy"?NV2_ICO_COPY:NV2_ICO_DL)+"</button>";
     return "<div class=\"nv2-tbar\" style=\"max-width:"+w+"px\"><span class=\"nv2-tbl\">"+E(L)+"</span><span class=\"nv2-ico\">"+IC("copy","Sao chép ảnh "+L)+IC("dl","Tải ảnh "+L)+"</span></div>"+
@@ -3712,37 +3741,39 @@ function nv2BuildSheetsHtml(bn, v2, o){
 
   const phuRows = d => d.pt.map(i=>{ const nm=i.tenTuy||(i.id==="mien"&&!i.thayTT?"Miến dong (khô)*":i.disp); return [nm, i.kind==="bal"?r10(i.g):Math.round(i.g)]; });
   const frName = d => d.fr.ten;
-  const EDIT = !!o.edit, EDITED = o.edited||{};
+  const EDIT = !!o.edit, EDITED = o.edited||{}, UOC = !!o.uoc, LBE = !!o.editlb, lbk = k=>LBE?k:null;
+  const uocTd = (name,val,bg)=>UOC?td(nv2UocText(name,val),{bg:bg,sz:12,color:"#555"}):"";
   // ô khối lượng: có thể sửa trực tiếp (ref = vị trí nguyên liệu trong ngày; conv = hệ số đổi từ số hiển thị sang gam gốc)
   const kl = (k,ref,val,fl,conv,unit)=>{ const key=k+"|"+ref; return td(val,{bg:fl,ed:EDIT&&ref?key+"|"+(conv||1):null,edited:!!EDITED[key],unit:unit}); };
-  const idOf = k => "ST_T1"+String(k+1).padStart(2,"0");
+  const idOf = k => LB.id+String(k+1).padStart(2,"0");
 
   /* ===== Sheet 1: Menu ===== */
   let h1 = "<tr>"+td("THỰC ĐƠN "+days.length+" NGÀY — "+String(bn.ten||"").toUpperCase()+" ("+cfg.kcal+" kcal, G:P:L = "+PR+")",{cs:days.length+1,b:1,sz:15,color:"#1F4E78",h:30,ws:"border:none;"})+"</tr><tr>"+td("",{cs:days.length+1,h:6,ws:"border:none;"})+"</tr>";
-  h1 += "<tr>"+td("Thời gian",{b:1,bg:COL.HEAD})+days.map((d,j)=>td("Ngày "+(j+1)+" ("+dayLabel(j)+")",{b:1,bg:COL.HEAD})).join("")+"</tr>";
+  h1 += "<tr>"+td(LB.cTime,{b:1,bg:COL.HEAD,lb:lbk("cTime")})+days.map((d,j)=>td("Ngày "+(j+1)+" ("+dayLabel(j)+")",{b:1,bg:COL.HEAD})).join("")+"</tr>";
   ["Sáng","Phụ sáng","Trưa","Phụ trưa","Tối"].forEach(lab=>{
-    h1 += "<tr>"+td(lab,{b:1,bg:(lab==="Sáng"||lab==="Trưa"||lab==="Tối")?COL.HEAD:COL.CYAN})+days.map(d=>{
+    h1 += "<tr>"+td(({"Sáng":LB.lSang,"Phụ sáng":LB.lPhuSang,"Trưa":LB.lTrua,"Phụ trưa":LB.lPhuTrua,"Tối":LB.lToi})[lab],{b:1,bg:(lab==="Sáng"||lab==="Trưa"||lab==="Tối")?COL.HEAD:COL.CYAN,lb:lbk(({"Sáng":"lSang","Phụ sáng":"lPhuSang","Trưa":"lTrua","Phụ trưa":"lPhuTrua","Tối":"lToi"})[lab])})+days.map(d=>{
       let t;
       if(lab==="Sáng") t=d.S.ten; else if(lab==="Phụ sáng") t="Trái cây: "+frName(d)+"\nHạt macca/óc chó";
       else if(lab==="Trưa") t=monLines(d.L,"trua"); else if(lab==="Tối") t=monLines(d.D,"toi");
-      else t=NVX.MON_GROUPS[d.opt].map(g=>g[0]).join("\n");
-      return td(t,{h:(lab==="Trưa"||lab==="Tối")?78:48});
+      else t=(d.foodPhu!==0&&d.pt&&d.pt.length)?NVX.MON_GROUPS[d.opt].map(g=>g[0]).join("\n"):"—";
+      const kt=(lab==="Sáng"&&d.S.kt)||(lab==="Trưa"&&(d.L.kt||(nv2TTGiong(d)&&d.D.kt)))||(lab==="Tối"&&d.D.kt);
+      return td(t,{h:(lab==="Trưa"||lab==="Tối")?78:48,kt:!!kt});
     }).join("")+"</tr>";
   });
   h1 += "<tr>"+td("* Miến: cân dạng khô, khối lượng làm tròn số nguyên. Gia vị cả ngày: xem sheet Chi tiết theo cữ.",{cs:days.length+1,it:1,sz:11,color:"#7f7f7f",ws:"border:none;"})+"</tr>";
   const menu = table(h1,[90].concat(days.map(()=>170)),"");
 
   /* ===== Sheet 2: Chi tiết theo cữ ===== */
-  const W2=[110,200,250,180];
+  const W2=UOC?[110,200,250,180,150]:[110,200,250,180];
   let h2="";
   days.forEach((dy,k)=>{
     let t="";
     const dt=dateOf(k);
-    t += "<tr>"+td(idOf(k),{b:1,color:"#fff",bg:COL.BANNER,h:36})+td(TITLE,{b:1,color:"#fff",bg:COL.BANNER,cs:2})+td(dt?ddy(dt):"",{b:1,color:"#fff",bg:COL.BANNER})+"</tr>";
-    t += "<tr>"+["Thời gian","Món","Thành phần","Khối lượng (g)"].map(h=>td(h,{b:1,bg:COL.HEAD})).join("")+"</tr>";
-    const block=(label,rows,mon,fl)=>{
+    t += "<tr>"+td(idOf(k),{b:1,color:"#fff",bg:COL.BANNER,h:36,lb:lbk("id")})+td(TITLE,{b:1,color:"#fff",bg:COL.BANNER,cs:2,lb:lbk("title")})+td(LB.date!=null?LB.date:(dt?ddy(dt):""),{b:1,color:"#fff",bg:COL.BANNER,cs:UOC?2:1,lb:lbk("date")})+"</tr>";
+    t += "<tr>"+[["cTime",LB.cTime],["cMon",LB.cMon],["cTp",LB.cTp],["cKl",LB.cKl]].concat(UOC?[["cUoc",LB.cUoc]]:[]).map(h=>td(h[1],{b:1,bg:COL.HEAD,lb:lbk(h[0])})).join("")+"</tr>";
+    const block=(label,rows,mon,fl,dref,kt,lbkey)=>{
       rows.forEach((x,i)=>{
-        t += "<tr>"+(i===0?td(label,{b:1,bg:fl,rs:rows.length})+td(mon,{b:1,bg:fl,rs:rows.length}):"")+td(x[0],{bg:fl,nm:(EDIT&&x[2])?k+"|"+x[2]:null})+kl(k,x[2],x[1],fl,x[3])+"</tr>";
+        t += "<tr>"+(i===0?td(label,{b:1,bg:fl,rs:rows.length,lb:lbk(lbkey)})+td(mon,{b:1,bg:fl,rs:rows.length,mon:(EDIT&&dref)?k+"|"+dref:null,kt:!!kt,ktmsg:!!kt}):"")+td(x[0],{bg:fl,nm:(EDIT&&x[2])?k+"|"+x[2]:null})+kl(k,x[2],x[1],fl,x[3])+uocTd(x[0],x[1],fl)+"</tr>";
       });
     };
     const mealRows=(its,bua,d,key)=>{
@@ -3750,29 +3781,29 @@ function nv2BuildSheetsHtml(bn, v2, o){
       { const hb=herbs(d); if(hb.length) rows.push([hb.join(", "),"Tùy chỉnh"]); }
       const dx=its.findIndex(i=>i.grp==="Dầu"); rows.push(["Dầu oliu",Math.round(its[dx].g),key+":"+dx,1]); return rows;
     };
-    block("Sáng",mealRows(dy.sm,"sang",dy.S,"sm"),dy.S.ten,null);
-    t += "<tr>"+td("Phụ sáng",{b:1,bg:COL.CYAN,rs:2})+td("Trái cây",{b:1,bg:COL.CYAN})+td(frName(dy),{bg:COL.CYAN})+kl(k,"fr",Math.round(dy.fr_item.g),COL.CYAN,1)+"</tr>";
-    t += "<tr>"+td("Hạt",{b:1,bg:COL.CYAN})+td("Macca/óc chó",{b:1,bg:COL.CYAN})+kl(k,"hat",Math.round(dy.hat.g),COL.CYAN,1)+"</tr>";
+    block(LB.lSang,mealRows(dy.sm,"sang",dy.S,"sm"),dy.S.ten,null,"S",dy.S.kt,"lSang");
+    t += "<tr>"+td(LB.lPhuSang,{b:1,bg:COL.CYAN,rs:2,lb:lbk("lPhuSang")})+td("Trái cây",{b:1,bg:COL.CYAN})+td(frName(dy),{bg:COL.CYAN})+kl(k,"fr",Math.round(dy.fr_item.g),COL.CYAN,1)+(UOC?td("",{bg:COL.CYAN}):"")+"</tr>";
+    t += "<tr>"+td("Hạt",{b:1,bg:COL.CYAN})+td("Macca/óc chó",{b:1,bg:COL.CYAN})+kl(k,"hat",Math.round(dy.hat.g),COL.CYAN,1)+(UOC?td("",{bg:COL.CYAN}):"")+"</tr>";
     const tt = nv2TTGiong(dy);
-    block(tt?"Trưa/tối\n(lượng ăn giống nhau)":"Trưa",mealRows(dy.lm,"trua",dy.L,"lm"),monLines(dy.L,"trua"),null);
+    block(tt?LB.lTruaToi:LB.lTrua,mealRows(dy.lm,"trua",dy.L,"lm"),monLines(dy.L,"trua"),null,"L",dy.L.kt||(tt&&dy.D.kt),tt?"lTruaToi":"lTrua");
     { const pr=phuRows(dy), n=pr.length, grpAt={}, skip={};
-      NVX.MON_GROUPS[dy.opt].forEach(([gname,idx])=>{ grpAt[idx[0]]={gname,len:idx.length}; idx.slice(1).forEach(j=>{ skip[j]=1; }); });
+      nv2PhuG(dy).forEach(([gname,idx])=>{ grpAt[idx[0]]={gname,len:idx.length}; idx.slice(1).forEach(j=>{ skip[j]=1; }); });
       pr.forEach((x,i)=>{
         const su=nv2SuaInfo(dy.pt[i]);
-        t += "<tr>"+(i===0?td("Phụ trưa",{b:1,bg:COL.CYAN,rs:n}):"")+(grpAt[i]?td(grpAt[i].gname,{b:1,bg:COL.CYAN,rs:grpAt[i].len}):(skip[i]?"":td(su?su.ten:"",{b:1,bg:COL.CYAN})))+td(su?su.pha:x[0],{bg:COL.CYAN,nm:(EDIT&&!su)?k+"|pt:"+i:null})+kl(k,"pt:"+i,x[1],COL.CYAN,1,su?" ml":"")+"</tr>";
+        t += "<tr>"+(i===0?td(LB.lPhuTrua,{b:1,bg:COL.CYAN,rs:n,lb:lbk("lPhuTrua")}):"")+(grpAt[i]?td(grpAt[i].gname,{b:1,bg:COL.CYAN,rs:grpAt[i].len}):(skip[i]?"":td(su?su.ten:"",{b:1,bg:COL.CYAN})))+td(su?su.pha:x[0],{bg:COL.CYAN,nm:(EDIT&&!su)?k+"|pt:"+i:null})+kl(k,"pt:"+i,x[1],COL.CYAN,1,su?" ml":"")+(UOC?td(su?"":nv2UocText(x[0],x[1]),{bg:COL.CYAN,sz:12,color:"#555"}):"")+"</tr>";
       });
     }
-    if(!tt) block("Tối",mealRows(dy.dm,"toi",dy.D,"dm"),monLines(dy.D,"toi"),null);
+    if(!tt) block(LB.lToi,mealRows(dy.dm,"toi",dy.D,"dm"),monLines(dy.D,"toi"),null,"D",dy.D.kt,"lToi");
     // footer
     const nFoot=Math.max(3,gv.length+1), hFoot=Math.max(24,Math.ceil(112/nFoot));
-    let note="Lưu ý:\n- Bún/miến/nui/mì: cân dạng khô hay tươi/luộc\n- Thịt/cá/tôm: không xương, không da, không vỏ\n- Đảm bảo đủ lượng dầu\n- Ăn đủ các cữ phụ như: Hạt, khoai/bắp, trái cây, sữa\n*Những trường hợp 2 cữ trưa/tối giống nhau: nhân đôi khối lượng nếu nấu chung 1 lần";
+    let note=LB.note;
     const used=1+gv.length;
     for(let i=0;i<nFoot;i++){
       t += "<tr style=\"height:"+hFoot+"px\">";
-      if(i===0) t += td(note,{bg:COL.NOTE,cs:2,rs:nFoot,al:"left",sz:12,ws:"padding-left:10px;line-height:1.35;"});
-      if(i===0) t += td("Tổng lượng gia vị/ngày",{b:1,bg:COL.SUB,cs:2});
-      else if(i<used) t += td(gv[i-1].ten+" ("+gv[i-1].unit+")")+kl("G","gv:"+(i-1),gv[i-1].amt,null,1);
-      else if(i===used) t += td("",{cs:2,rs:nFoot-used});
+      if(i===0) t += td(note,{bg:COL.NOTE,cs:2,rs:nFoot,al:"left",sz:12,ws:"padding-left:10px;line-height:1.35;",lb:lbk("note")});
+      if(i===0) t += td(LB.gvTitle,{b:1,bg:COL.SUB,cs:UOC?3:2,lb:lbk("gvTitle")});
+      else if(i<used) t += td(gv[i-1].ten+" ("+gv[i-1].unit+")")+kl("G","gv:"+(i-1),gv[i-1].amt,null,1)+(UOC?td(""):"");
+      else if(i===used) t += td("",{cs:UOC?3:2,rs:nFoot-used});
       t += "</tr>";
     }
     t += "<tr>"+td("",{cs:4,h:8,ws:"border:none;"})+"</tr>";
@@ -3861,6 +3892,7 @@ function nv2MauData(bn, mode){
   const cdL = cheDoLay(bn);
   const cfg = NV2.config({thucpham:state.thucpham, mon:state.mon}, bn, Object.assign((mode==="st") ? {than:true} : {than:false, ncLow:false, rauLow:false}, {purin:cdL.purin, phospho:cdL.phospho, oxalat:cdL.oxalat}));
   if(!cfg.kcal || !cfg.P_T || !cfg.G_T || !cfg.L_T) return {error:"Hồ sơ thiếu mục tiêu năng lượng/đạm/glucid/lipid."};
+  if(cfg.thieuPB&&cfg.thieuPB.length) return {error:"Bảng số phần của hồ sơ chưa phân bổ vào các cữ (Sáng/Trưa/Tối/Phụ) cho nhóm: "+cfg.thieuPB.join(", ")+". Hãy vào hồ sơ → Bảng số phần, nhập số phần từng cữ (hoặc bấm “Áp dụng gợi ý”) rồi Lưu — hệ thống không tự chia mặc định."};
   const M = NV2.MAP, tp = id=>cfg.tpMap[id];
   const gd = n => { const m=M[n]; if(!m) return null; if(m[2]) return m[2]; const t=tp(m[0]); return t&&t.protein?700/t.protein:null; };
   const K_HAN = !!cfg.kaliHan;
@@ -3909,7 +3941,7 @@ function nv2MauData(bn, mode){
   const GV = gvKeHoach(bn, cfg.NA_T);   // V171: theo gia vị đã chọn + lượng chuyên gia chỉnh ở Mục tiêu dinh dưỡng
   const OIL_ML_PER_G = 1;   // chốt 09/10/2026: 1 đơn vị dầu = 5 ml = 1 muỗng canh
   const oilMl = k => U[k].dau*5*OIL_ML_PER_G;
-  const dauTong = un.dau*5*OIL_ML_PER_G;
+  const dauTong = (U.sang.dau+U.trua.dau+U.toi.dau)*5*OIL_ML_PER_G;   // V305: tổng dầu = cộng 3 cữ theo Bảng số phần (không lấy số tự tính)
   return {mode, ten:bn.ten||"", kcal:cfg.kcal, pG,pP,pL, P_T:cfg.P_T, NA_T:cfg.NA_T, K_CAP:cfg.K_CAP, kaliHan:K_HAN,
     sang:meal("sang"), trua:meal("trua"), toi:meal("toi"), toiGiongTrua:same(U.trua,U.toi),
     phu:{khoai:phu, tc:r(un.tc*80), tcN:un.tc, hat:r(un.hat*30)},
@@ -3921,8 +3953,8 @@ function nv2MauData(bn, mode){
 /* ---------- HTML ---------- */
 function nv2MauSpoon(n){ const h=Math.round(n*2)/2; if(h<=0) return "0"; const w=Math.floor(h); return (w?String(w):"")+(h-w?"½":""); }
 const NX_MODES = {
-  sk:  {ma:"SK",  ten:"Người bình thường"},
-  st:  {ma:"ST",  ten:"Bệnh thận mạn (suy thận)"},
+  sk:  {ma:"SK",  ten:"Sống khỏe"},
+  st:  {ma:"ST",  ten:"Bệnh thận mạn"},
   ibs: {ma:"IBS", ten:"Hội chứng ruột kích thích (IBS)"}
 };
 // Danh sách thực phẩm ưu tiên/hạn chế: nguyên văn từ sheet "2. Hướng dẫn chế độ ăn" (PhammemNUCA T9).
@@ -4005,7 +4037,7 @@ const NXP_CSS = `
 .pa-ft{flex:none;border-top:1px solid #d6e0e3;margin-top:.4em;padding-top:.35em;font-size:10px;color:#55656d;display:flex;justify-content:space-between;gap:12px}
 .pa-page [contenteditable]{outline:none;border-radius:3px;cursor:text}
 .pa-page [contenteditable]:hover{background:rgba(14,107,120,.08)}
-.pa-page [contenteditable]:focus{background:#fffbe6;box-shadow:0 0 0 2px #0e6b78}
+.pa-page [contenteditable]:focus{box-shadow:0 0 0 2px #0e6b78}
 .pa-ic{padding-left:.7em;padding-right:.7em;display:inline-flex;align-items:center;justify-content:center}
 .pa-print{display:inline-flex;align-items:center;gap:6px}
 .pa-bar{width:794px;margin:6px auto 22px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -4087,7 +4119,7 @@ function nv2MauPoster(d){
       : isST ? [["ok","Nên ăn",L.st_tc_nen],["no","Hạn chế",L.st_tc_han]] : [["ok","Ưu tiên",L.ibs_tc_ut],["no","Không ăn",L.ibs_tc_no]];
     phuCols.push(`<div class="pa-pc">${item("ps.tc",{ico:(mode==="ibs"?"traicay_ibs":"traicay"),n:"Trái cây tươi (chọn 1)",g:tcG})}${notes("ps.tc.n",nrows)}</div>`);
   }
-  const sId = d.suaId || (isST ? "yt_nepro_1" : "gen");
+  const sId = d.suaId || "none";   // V304: hồ sơ không chọn sữa/sản phẩm bổ sung → không hiện khối sữa
   if(sId!=="none"){
     const stp = (typeof state!=="undefined") ? state.thucpham.find(t=>t.id===sId) : null;
     let sVol="", sName, sForm;
@@ -4138,7 +4170,7 @@ function nv2MauPoster(d){
   const gvCard = `<section class="pa-gv pa-gv-tot"><h3>Tổng lượng gia vị dùng cả ngày</h3>
     ${d.gv.length?`<div class="pa-gvr" style="--w:${(100/Math.max(d.gv.length,4)).toFixed(3)}%">${gvItems.join('<div class="pa-gvp">+</div>')}</div>
     ${gvQuyDoiText(d.gv)?`<div class="pa-nl"><div class="pa-nr i"><b>Quy đổi:</b><span>${gvQuyDoiText(d.gv)}</span></div></div>`:""}`
-    :`<div class="pa-ln">Hồ sơ chưa có mục tiêu Natri nên chưa tính lượng gia vị.</div>`}</section>`;
+    :`<div class="pa-ln">${(+d.NA_T>0)?"Hồ sơ chưa chọn loại gia vị chứa Natri nên chưa tính lượng gia vị.":"Hồ sơ chưa có mục tiêu Natri nên chưa tính lượng gia vị."}</div>`}</section>`;
   /* ----- lưu ý chung (SK/IBS) ----- */
   const luuY = isST ? "" : `<section class="pa-gv"><h3>Lưu ý sử dụng gia vị</h3>
     <div class="pa-ln"><b>Thực phẩm ngọt:</b> &lt; 25 g đường = 5 muỗng cà phê đường = 10 muỗng sữa đặc.</div>
@@ -4156,7 +4188,7 @@ function nv2MauPoster(d){
     <div class="pa-pg"><div class="pa-page" id="nxa-p1"><div class="pa-in">${head}${mealCard("sang","Bữa sáng","Món nước/khô – hạn chế nước lèo",NXP_COL.sang,false,u1,true)}${phuSang}</div>${ft(1)}</div>
       <div class="pa-bar"><button class="btn sm" type="button" data-a4-copy="1">Sao chép trang 1</button><button class="btn secondary sm pa-ic" type="button" data-a4-dl="1" title="Tải ảnh PNG trang 1" aria-label="Tải ảnh trang 1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></button></div></div>
     <div class="pa-pg"><div class="pa-page" id="nxa-p2"><div class="pa-in">${mealCard("trua","Bữa trưa",mode==="ibs"?"":"Món chính hấp/luộc/kho nhạt",NXP_COL.trua,true,u2,false)}${phuTrua}${toiCard}${gvCard}</div>${ft(2)}</div>
-      <div class="pa-bar"><button class="btn sm" type="button" data-a4-copy="2">Sao chép trang 2</button><button class="btn secondary sm pa-ic" type="button" data-a4-dl="2" title="Tải ảnh PNG trang 2" aria-label="Tải ảnh trang 2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></button><button class="btn sm pa-print" type="button" data-a4-pdf="1" title="Tạo file PDF A4 2 trang — mở file rồi bấm Ctrl+P để in" aria-label="Tạo PDF để in"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg> In (PDF A4)</button><button class="btn secondary sm" type="button" id="btn-a4-save">${(typeof lastMau!=="undefined"&&lastMau&&lastMau.recId)?"Cập nhật bản đã lưu":"Lưu vào Lịch sử"}</button><button class="btn secondary sm" type="button" id="btn-a4-reset" ${Object.keys(ED).length?"":"hidden"}>Khôi phục bản gốc</button></div></div></div>`;
+      <div class="pa-bar"><button class="btn sm" type="button" data-a4-copy="2">Sao chép trang 2</button><button class="btn secondary sm pa-ic" type="button" data-a4-dl="2" title="Tải ảnh PNG trang 2" aria-label="Tải ảnh trang 2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></button><button class="btn sm pa-print" type="button" data-a4-pdf="1" title="Tạo file PDF A4 2 trang — mở file rồi bấm Ctrl+P để in" aria-label="Tạo PDF để in"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg> In (PDF A4)</button><button class="btn secondary sm" type="button" id="btn-a4-reset" ${Object.keys(ED).length?"":"hidden"}>Khôi phục bản gốc</button></div></div></div>`;
 }
 const NXP_COL = {sang:"#5fa152", phu:"#0f9d8a", trua:"#f4bf00", toi:"#d98a82"};
 function nxaFit(){
@@ -4228,6 +4260,7 @@ function nxaWireEdit(){
       if(c&&ge){ const div=parseFloat(c.getAttribute("data-div")), g=parseFloat(String(ge.textContent).replace(",",".")); if(div&&isFinite(g)) t.textContent=nxEst(g/div); }
     } else lastMau.a4ed[k]=txt;
     try{ nxaFit(); }catch(_){}
+    mauTuLuu();
     const rs=document.getElementById("btn-a4-reset"); if(rs) rs.hidden=false;
   });
 }
@@ -4242,42 +4275,44 @@ function renderMauResult(){
   const phuList = (()=>{ const L=[];
     if(m.data.phuDv>0 && pd.khoai[0] && pd.khoai[0][1]>0) L.push(["Khoai/bắp luộc", f1v(m.data.phuDv)+" đơn vị"]);
     if(pd.tc>0) L.push(["Trái cây", f1v(pd.tcN)+" đơn vị"]);
-    const hs = suaTuHoSo(bn_of(m)), cur = m.suaId || (mode==="st"?"yt_nepro_1":"gen");
-    if(cur!=="none"){
+    const hs = suaTuHoSo(bn_of(m)), cur = m.suaId || "none";
+    if(cur!=="none" && hs){
       const t = state.thucpham.find(x=>x.id===cur);
       const nm = (t && t.cach_pha) ? t.ten : "Sữa chua/sữa tươi/phô mai";
-      L.push(["Sữa", esc(nm)+(hs?"":" (mặc định — hồ sơ chưa chọn sữa)")]);
+      L.push(["Sữa", esc(nm)]);
     }
     if(pd.hat>0) L.push(["Hạt", f1v(pd.hat/30)+" đơn vị"]);
     return L; })();
-  const phuTogg = `<div class="row" style="gap:8px 12px;flex-wrap:wrap;align-items:center;"><b style="font-size:13px;">Bữa phụ theo kế hoạch:</b>${phuList.length?phuList.map(([k,v])=>`<span class="chip" style="display:inline-flex;gap:6px;align-items:baseline;padding:4px 10px;border:1px solid var(--border);border-radius:99px;background:var(--surface);font-size:12.5px;"><b>${k}</b><span>${v}</span></span>`).join(""):'<span class="hint" style="margin:0;">Kế hoạch không có bữa phụ.</span>'}<span class="hint" style="margin:0;">Chỉ báo cáo lại từ kế hoạch/hồ sơ; muốn đổi, chỉnh ở phần kế hoạch.</span></div>`;
+  const phuTogg = `<div class="row" style="gap:8px 12px;flex-wrap:wrap;align-items:center;"><b style="font-size:13px;">Bữa phụ theo kế hoạch:</b>${phuList.length?phuList.map(([k,v])=>`<span class="chip" style="display:inline-flex;gap:6px;align-items:baseline;padding:4px 10px;border:1px solid var(--border);border-radius:99px;background:var(--surface);font-size:12.5px;"><b>${k}</b><span>${v}</span></span>`).join(""):'<span class="hint" style="margin:0;">Kế hoạch không có bữa phụ.</span>'}</div>`;
   const suaSel = "";
   const tabs = `<div class="row" role="tablist" style="gap:6px;flex-wrap:wrap;">${Object.keys(NX_MODES).map(k=>`<button class="btn sm ${k===mode?"":"secondary"}" type="button" data-mau-mode="${k}" role="tab" aria-selected="${k===mode}">${NX_MODES[k].ten}</button>`).join("")}</div>`;
   return `<div class="stack" style="margin-top:18px;">
-    <h3 style="margin:0;">Thực đơn mẫu — ${esc(m.data.ten)}</h3>
+    <div class="row" id="nv2-kq-top" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;"><h3 style="margin:0;">Thực đơn mẫu — ${esc(m.data.ten)}</h3>
+      <span class="hint">${m.recId?"✓ Đã lưu trong Lịch sử — chỉnh sửa tự cập nhật bản đã lưu":"Chưa lưu vào Lịch sử"}</span></div>
     ${tabs}
     ${phuTogg}
     ${suaSel}
     ${nv2MauPoster(Object.assign({}, m.data, {phuOff:po, suaId:m.suaId, suaPhan:suaPhanHoSo(m.bn, m.suaId)}))}
   </div>`;
 }
+function mauInfoHienTai(){ return {mode:lastMau.mode||"st", suaId:lastMau.suaId||null, a4ed:JSON.parse(JSON.stringify(lastMau.a4ed||{})), phuOff:Object.assign({},lastMau.phuOff||{}), savedAt:new Date().toISOString()}; }
+function mauGhiSauXay(mode,targetId){
+  if(!lastMau) return; lastMau.recId=null;
+  if(mode==="khong") return;
+  let rec = (mode==="de"&&targetId) ? state.thucdon.find(r=>r.id===targetId) : null;
+  const mi=mauInfoHienTai();
+  if(rec){ Object.assign(rec,{benhnhan_id:lastMau.bn, so_ngay:0, nguoi_lap:"", tuan_bat_dau:null, engine:"mau", days:[], mau:mi, cauhinh:tdCauHinh(state.benhnhan.find(b=>b.id===lastMau.bn)||{})}); delete rec.v2; }
+  else{ rec={id:"mau_"+Date.now(), benhnhan_id:lastMau.bn, so_ngay:0, nguoi_lap:"", tuan_bat_dau:null, engine:"mau", days:[], mau:mi, cauhinh:tdCauHinh(state.benhnhan.find(b=>b.id===lastMau.bn)||{})}; state.thucdon.push(rec); }
+  lastMau.recId=rec.id; persistOne("thucdon", rec);
+}
+let mauSaveTimer=null;
+function mauTuLuu(){   // đã lưu thì mọi chỉnh sửa tự cập nhật đúng bản đó (không tạo bản mới)
+  if(!lastMau||!lastMau.recId) return;
+  clearTimeout(mauSaveTimer); mauSaveTimer=setTimeout(()=>{ const rec=state.thucdon.find(r=>r.id===(lastMau&&lastMau.recId)); if(!rec||!lastMau) return; rec.mau=mauInfoHienTai(); persistOne("thucdon",rec); },400);
+}
 function nv2WireMau(){
   try{ nxaFit(); if(document.fonts&&document.fonts.ready) document.fonts.ready.then(nxaFit); nxaWireEdit(); }catch(e){}
-  document.getElementById("btn-a4-reset")?.addEventListener("click", ()=>{ if(!lastMau) return; lastMau.a4ed={}; render(); });
-  document.getElementById("btn-a4-save")?.addEventListener("click", ()=>{
-    if(!lastMau) return;
-    const bn = state.benhnhan.find(x=>x.id===lastMau.bn); if(!bn){ banner("Không tìm thấy hồ sơ bệnh nhân.","danger"); return; }
-    const mauInfo = {mode:lastMau.mode||"st", suaId:lastMau.suaId||null, a4ed:JSON.parse(JSON.stringify(lastMau.a4ed||{})), phuOff:Object.assign({},lastMau.phuOff||{}), savedAt:new Date().toISOString()};
-    let rec = lastMau.recId ? state.thucdon.find(r=>r.id===lastMau.recId) : null;
-    if(rec){ rec.mau = mauInfo; }
-    else{
-      rec = {id:"mau_"+Date.now(), benhnhan_id:bn.id, so_ngay:0, nguoi_lap:"", tuan_bat_dau:null, engine:"mau", days:[], mau:mauInfo};
-      state.thucdon.push(rec); lastMau.recId = rec.id;
-    }
-    persistOne("thucdon", rec);
-    banner(`Đã lưu thực đơn mẫu ${esc(NX_MODES[mauInfo.mode].ten)} của ${esc(bn.ten)} vào Lịch sử (mục "Xem lịch sử" ở tab Bệnh nhân).`,"info");
-    render();
-  });
+  document.getElementById("btn-a4-reset")?.addEventListener("click", ()=>{ if(!lastMau) return; lastMau.a4ed={}; mauTuLuu(); render(); });
   document.querySelectorAll("[data-a4-copy]").forEach(b=>b.addEventListener("click", async ()=>{
     const w=b.getAttribute("data-a4-copy");
     if(typeof html2canvas==="undefined"){ banner("Thư viện chụp ảnh chưa tải xong, thử lại sau vài giây.","danger"); return; }
@@ -4303,8 +4338,8 @@ function nv2WireMau(){
   }));
   document.querySelectorAll("[data-mau-mode]").forEach(b=>b.addEventListener("click", ()=>{
     const bn = state.benhnhan.find(x=>x.id===selectedBenhNhanId); if(!bn||!lastMau) return;
-    lastMau = {bn:bn.id, mode:b.getAttribute("data-mau-mode"), a4ed:{}, suaId:lastMau.suaId, suaHs:lastMau.suaHs, phuOff:lastMau.phuOff||{}, data:nv2MauData(bn, b.getAttribute("data-mau-mode"))};
-    render();
+    lastMau = {bn:bn.id, mode:b.getAttribute("data-mau-mode"), a4ed:{}, suaId:lastMau.suaId, suaHs:lastMau.suaHs, phuOff:lastMau.phuOff||{}, recId:lastMau.recId, data:nv2MauData(bn, b.getAttribute("data-mau-mode"))};
+    mauTuLuu(); render();
   }));
   document.getElementById("mau-sua")?.addEventListener("change", e=>{ if(!lastMau) return; lastMau.suaId=e.target.value; if(lastMau.a4ed){ ["ps.sua.v","ps.sua.f","ps.sua.n","ps.sua.s"].forEach(k=>delete lastMau.a4ed[k]); } render(); });
   document.querySelectorAll("[data-mau-phu]").forEach(c=>c.addEventListener("change", ()=>{
@@ -4350,7 +4385,6 @@ function nv2ChiSoPanelHtml(){
     <div class="vck-body">
       <div class="vck-bar"><input type="search" class="vck-search" id="vck-search" placeholder="Tìm vi chất (vd: canxi, vitamin C)…" autocomplete="off">
         <button class="vck-btn vck-all" type="button" id="nv2-chiso-tatca" title="Chọn tất cả vi chất"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>Chọn tất cả</button>
-        <button class="vck-btn vck-def" type="button" id="nv2-chiso-macdinh" title="Về mặc định: chỉ 6 chỉ số chính"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Mặc định</button>
       </div>
       <div class="vck-list">${nhom}</div>
     </div></details>`;
@@ -4375,6 +4409,7 @@ function nv2ChiSoFit(){
     while(wraps(more) && vis.length){ const t=vis.pop(); t.hidden=true; hid.unshift(t); upd(); }
   }
 }
+const VCK_IC_ALL=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>`, VCK_IC_DEF=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>`;
 function nv2ChiSoNhan(){
   document.querySelectorAll(".vck-grp").forEach(g=>{
     const cs=[...g.querySelectorAll(".vck-chip:not([hidden])")], b=g.querySelector(".vck-ga"); if(!b) return;
@@ -4382,7 +4417,9 @@ function nv2ChiSoNhan(){
     b.dataset.all=all?"1":"0"; b.textContent=all?"Hủy nhóm":"Chọn nhóm"; b.disabled=!cs.length;
   });
   const t=document.getElementById("nv2-chiso-tatca");
-  if(t){ const cs=[...document.querySelectorAll(".vck-chip:not([hidden])")]; const all=cs.length>0 && cs.every(c=>chiSoTheoDoi.includes(c.dataset.chiso)); t.dataset.all="0"; }
+  if(t){ const cs=[...document.querySelectorAll(".vck-chip")]; const all=cs.length>0 && cs.every(c=>chiSoTheoDoi.includes(c.dataset.chiso)); t.dataset.all=all?"1":"0";
+    t.title=all?"Về mặc định: chỉ 6 chỉ số chính":"Chọn tất cả vi chất";
+    t.innerHTML=all?VCK_IC_DEF+"Về mặc định":VCK_IC_ALL+"Chọn tất cả"; }
 }
 function nv2ChiSoCapNhat(){
   nv2LuuChiSo();
@@ -4415,7 +4452,9 @@ function nv2ViewBarHtml(){
   const tab=(k,l)=>`<button class="btn ${nv2Sheet===k&&nv2View==="xl"?"secondary":"ghost"} sm" data-nv2sheet="${k}" type="button">${l}</button>`;
   return `<div class="row" id="nv2-viewbar" style="gap:6px;flex-wrap:wrap;align-items:center;">
     ${tab("menu","Menu")}${tab("chitiet","Chi tiết theo cữ")}${tab("check","Check TPDD")}
+    ${nv2Sheet==="chitiet"?`<button class="btn ${nv2Uoc?"secondary":"ghost"} sm" id="btn-uoc-v2" type="button" aria-pressed="${nv2Uoc}" title="Thêm cột Ước lượng (chén, lát, quả…) cạnh khối lượng — có trong ảnh và PDF, chưa có trong file Excel">${nv2Uoc?"✓ ":""}Hiện ước lượng</button>`:""}
     <button class="btn ghost sm" id="btn-xuat-v2" type="button" title="Tải file Excel đủ 3 sheet: Menu, Chi tiết theo cữ, Check TPDD"><span class="xl-ic">${NV2_ICO_DL}</span>Xuất Excel</button>
+    ${(()=>{ const n=lastGenV2&&lastGenV2.days?lastGenV2.days.reduce((a,d)=>a+((d.S&&d.S.kt)?1:0)+((d.L&&d.L.kt)||(d.D&&d.D.kt&&nv2TTGiong(d))?1:0)+((d.D&&d.D.kt&&!nv2TTGiong(d))?1:0),0):0; return n?`<span class="pill" style="background:#F8CBAD;color:#B00020;font-weight:700;">⚠ ${n} tên món cần kiểm tra</span>`:""; })()}
     ${(lastGenV2&&lastGenV2.orig)?`<button class="btn ghost sm" id="btn-restore-v2" type="button">Khôi phục bản gốc (đã sửa <span id="nv2-edit-count">${Object.keys(lastGenV2.edited||{}).length}</span> ô)</button>`:""}
   </div>`;
 }
@@ -4425,7 +4464,7 @@ function nv2ActBarHtml(){
 function nv2XlBody(v,defs){
   const bn = state.benhnhan.find(b=>b.id===selectedBenhNhanId) || {ten:""};
   const maOf = id=>{ const t=state.thucpham.find(x=>x.id===id); return (t&&t.ma!=null)?String(t.ma):(NV2.MA[id]||null); };
-  const h = nv2BuildSheetsHtml(bn, v, {startISO:v.meta&&v.meta.tuanBatDau, maOf, chiSoDefs:defs, edit:nv2Sheet==="chitiet", edited:v.edited||{}});
+  const h = nv2BuildSheetsHtml(bn, v, {startISO:v.meta&&v.meta.tuanBatDau, maOf, chiSoDefs:defs, edit:nv2Sheet==="chitiet", edited:v.edited||{}, uoc:nv2Uoc&&nv2Sheet==="chitiet", editlb:(nv2Sheet==="chitiet"||nv2Sheet==="menu")});
   return (nv2Sheet==="chitiet"?nv2ActBarHtml():"")+(h[nv2Sheet]||h.menu);
 }
 function nv2XlHtml(v,defs){
@@ -4458,6 +4497,31 @@ function nv2SuaInfo(i){
   return {ten:tp.ten, pha, ml};
 }
 /* V168: trưa và tối giống hệt nhau (cùng món, cùng nguyên liệu, khối lượng) → bảng chi tiết chỉ ghi 1 khối "Trưa/tối (lượng ăn giống nhau)" */
+/* V302: cột "Ước lượng" (chỉ hiển thị khi bật nút) — quy đổi khối lượng theo NHÓM từ bảng đơn vị file PhammemNUCA_T9 (cùng hệ số với thực đơn mẫu); nguyên liệu nhóm chưa có đơn vị thì để trống */
+let nv2Uoc = false; try{ nv2Uoc = localStorage.getItem("tctd_uoc")==="1"; }catch(e){}
+function nv2UocText(name,val){
+  const g=Number(val); if(!(g>0)) return "";
+  const n=String(name||"").normalize("NFC").toLowerCase().trim();   // giữ dấu: phân biệt cá/cà, bắp/cải bắp
+  const f=(div,unit)=>"≈ "+nxEst(g/div)+" "+unit;
+  const W=(re)=>re.test(n);
+  if(W(/\(khô\)/)) return "";                                  // miến cân dạng khô: không quy theo chén chín
+  if(W(/^dầu(\s|$)/)) return f(5,"muỗng canh");
+  if(W(/^cơm(\s|$)|^gạo(\s|$)/)) return f(110,"chén");
+  if(W(/^(bún|miến|phở|bánh canh|bánh phở|hủ tiếu)(\s|$)/)) return f(105,"chén");
+  if(W(/^(bánh mì|bánh sandwich|sandwich)(\s|$)/)) return f(76,"ổ bánh mì");
+  if(W(/^(bắp|ngô)(\s|$)/) && !W(/^bắp cải/)) return f(250,"quả");
+  if(W(/^khoai lang(\s|$)/)) return f(80,"củ nhỏ");
+  if(W(/^tàu hủ ky|^phù trúc/)) return f(14/8,"miếng nhỏ");
+  if(W(/^đậu (phụ|hũ|khuôn)(\s|$)/)) return f(128,"bìa");
+  if(W(/^nấm(\s|$)/)) return f(120,"chén");
+  if(W(/^đậu (đen|đỏ|gà|hà lan)(\s|$)/)) return f(120,"chén");
+  if(W(/^trứng(\s|$)/)) return f(45,"quả");
+  if(W(/^tôm(\s|$)/)) return f(20,"con");
+  if(W(/^cá(\s|$)/)) return f(80,"khứa");
+  if(W(/^(thịt|heo|bò|gà|vịt|sườn|nạc|giò)(\s|$)/)) return f(10,"lát mỏng");
+  return "";
+}
+function nv2PhuG(d){ return d.foodPhu===0 ? [] : NV2.MON_GROUPS[d.opt]; }   // V301: không có cữ phụ trưa thức ăn (hồ sơ = 0) thì không có nhóm món
 function nv2TTGiong(d){
   if(!d || !d.lm || !d.dm || !d.L || !d.D) return false;
   if(String(d.L.ten)!==String(d.D.ten) || d.lm.length!==d.dm.length) return false;
@@ -4488,11 +4552,105 @@ function nv2ApplyEdit(v,dayIdx,ref,displayVal,conv){
   it.g=newG; v.edited[dayIdx+"|"+ref]=1;
   nv2RecalcDay(d,v.gv); return true;
 }
+function btnDangChay(b,txt){ if(!b) return; b.classList.add("dang-chay"); b.disabled=true; b.innerHTML='<span class="spin"></span>'+txt; }
+function cuonToiKq(){ setTimeout(()=>{ const el=document.getElementById("nv2-kq-top"); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); },60); }
+/* V294: hỏi NGAY KHI BẤM Xây (giống hộp lưu hồ sơ): lưu thành bản mới trong Lịch sử / lưu đè bản gần nhất / chỉ xem không lưu. */
+function tdBanGanNhat(kind,bn){
+  const ok=r=> r.benhnhan_id===bn.id && (kind==="mau" ? r.engine==="mau" : r.engine!=="mau");
+  if(kind==="v2" && lastGenV2 && lastGenV2.meta && lastGenV2.meta.recId && lastGenV2.meta.benhnhanId===bn.id){ const r=state.thucdon.find(x=>x.id===lastGenV2.meta.recId); if(r) return r; }
+  if(kind==="mau" && lastMau && lastMau.bn===bn.id && lastMau.recId){ const r=state.thucdon.find(x=>x.id===lastMau.recId); if(r) return r; }
+  const L=state.thucdon.filter(ok); return L.length?L[L.length-1]:null;
+}
+function tdNhanBan(r){
+  let t=""; try{ const ms = r.mau&&r.mau.savedAt ? new Date(r.mau.savedAt) : new Date(parseInt(String(r.id).split("_")[1])); if(isFinite(ms)) t=ms.toLocaleString("vi-VN"); }catch(e){}
+  const mo = r.engine==="mau" ? "thực đơn mẫu "+((NX_MODES[(r.mau||{}).mode]||NX_MODES.st).ten) : "thực đơn "+(r.so_ngay||"")+" ngày";
+  return mo+(t?" lưu lúc "+t:"");
+}
+const TD_HOSO_NHAN = {target_energy:"Năng lượng", target_protein:"Đạm", target_lipid:"Lipid", target_carb:"Glucid", natri_target:"Natri", kali_ceiling:"Kali trần", can_nang_kg:"Cân nặng"};
+const TD_CHEDO_NHAN = {than:"Suy thận", ibs:"IBS", purin:"Purin", dtd:"ĐTĐ", phospho:"Phospho", oxalat:"Oxalat", cungMon:"Trưa & Tối cùng món"};
+function tdCauHinh(bn){   // ảnh chụp cài đặt lúc xây — để lần sau hiện "điểm vừa thay đổi"
+  const cd=cheDoLay(bn), ho={}; Object.keys(TD_HOSO_NHAN).forEach(k=>{ ho[k]=bn[k]==null?null:bn[k]; });
+  const che={}; Object.keys(TD_CHEDO_NHAN).forEach(k=>{ che[k]=!!cd[k]; });
+  return {ho_so:ho, che_do:che};
+}
+function tdThayDoi(kind,bn,last){
+  const L=[], cur=tdCauHinh(bn), old=last.cauhinh||{};
+  if(kind==="v2"){
+    const sn=Math.min(30,Math.max(1,parseInt(document.getElementById("inp-songay")?.value)||(nv2Form&&nv2Form.soNgay)||7));
+    const nb=document.getElementById("inp-ngaybd")?.value||(nv2Form&&nv2Form.ngayBd)||"";
+    if(last.so_ngay && last.so_ngay!==sn) L.push(`Số ngày: ${last.so_ngay} → ${sn}`);
+    if(last.tuan_bat_dau && nb && last.tuan_bat_dau!==nb) L.push(`Ngày bắt đầu: ${last.tuan_bat_dau} → ${nb}`);
+    const oc=((last.v2&&last.v2.cfg&&last.v2.cfg.chiSo)||[]), nc=chiSoTheoDoi||[];
+    const nm=k=>esc((TP_CHISO_MAP[k]&&TP_CHISO_MAP[k].label)||k);
+    const them=nc.filter(k=>!oc.includes(k)).map(nm), bo=oc.filter(k=>!nc.includes(k)).map(nm);
+    if(them.length||bo.length) L.push("Vi chất theo dõi:"+(them.length?" thêm "+them.join(", "):"")+(bo.length?(them.length?";":"")+" bỏ "+bo.join(", "):""));
+  }
+  if(old.che_do){ const d=Object.keys(TD_CHEDO_NHAN).filter(k=>!!old.che_do[k]!==!!cur.che_do[k]).map(k=>`${TD_CHEDO_NHAN[k]} (${cur.che_do[k]?"bật":"tắt"})`); if(d.length) L.push("Chế độ tiết chế: "+d.join(", ")); }
+  if(old.ho_so){ Object.keys(TD_HOSO_NHAN).forEach(k=>{ const a=old.ho_so[k], b=cur.ho_so[k]; if(a!=null && b!=null && String(a)!==String(b)) L.push(`${TD_HOSO_NHAN[k]} (hồ sơ): ${a} → ${b}`); }); }
+  // chỗ đã chỉnh tay trên bản đang hiển thị
+  if(kind==="v2" && lastGenV2 && lastGenV2.meta && lastGenV2.meta.benhnhanId===bn.id){ const n=Object.keys(lastGenV2.edited||{}).length; if(n) L.push(`Bản đang hiển thị có ${n} chỗ bạn đã chỉnh tay (sẽ không được giữ khi xây lại)`); }
+  if(kind==="mau" && lastMau && lastMau.bn===bn.id){ const n=Object.keys(lastMau.a4ed||{}).length; if(n) L.push(`Poster đang hiển thị có ${n} chỗ bạn đã chỉnh tay (sẽ không được giữ khi xây lại)`); }
+  return L;
+}
+function hoiLuuTruocXay(kind,bn,cb,regen){
+  document.getElementById("td-luu-overlay")?.remove();
+  const last=tdBanGanNhat(kind,bn);
+  if(!last){ cb("moi",null); return; }   // chưa có bản nào → lưu mới luôn, không cần hỏi
+  const thayDoi=tdThayDoi(kind,bn,last);
+  if(!regen && last.cauhinh && !thayDoi.length){ cb("de",last.id); return; }   // không đổi gì → kết quả y hệt bản đã lưu: ghi lại đúng bản đó, không hỏi, không thêm lịch sử
+  const ov=document.createElement("div"); ov.id="td-luu-overlay"; ov.className="xacnhan-overlay";
+  ov.innerHTML=`<div class="xacnhan-box"><div class="xacnhan-title">⚠ Đã có thực đơn trong Lịch sử</div>
+    <div class="xacnhan-body">${(()=>{ const t=thayDoi; return `<b>${esc(bn.ten)}</b> đã có bản lưu gần nhất.`+(t.length?`<ul style="margin:6px 0 0 18px;padding:0;">${t.map(x=>`<li>${x}</li>`).join("")}</ul>`:""); })()}</div>
+    <div class="xacnhan-actions"><button class="btn ghost" id="td-luu-de">Lưu đè</button><button class="btn nuca-primary" id="td-luu-moi">Lưu lịch sử mới</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener("click",e=>{ if(e.target===ov) ov.remove(); });   // bấm ra ngoài = huỷ, chưa xây
+  const chon=(mode)=>{ ov.remove(); cb(mode, last.id); };
+  document.getElementById("td-luu-de").onclick=()=>chon("de");
+  document.getElementById("td-luu-moi").onclick=()=>chon("moi");
+}
+/* Ghi thực đơn chi tiết vừa xây theo lựa chọn. mode: "moi" | "de" (đè bản targetId) | "khong". */
+function nv2GhiSauXay(mode,targetId){
+  const v=lastGenV2; if(!v||!v.meta) return;
+  v.meta.recId=null;
+  if(mode==="khong") return;
+  const v2={lbl:v.lbl||{}, days:nv2SerializeDays(v.days), gv:v.gv, cfg:v.cfg, warnings:v.warnings, excluded:v.excluded, poolSize:v.poolSize};
+  let rec = (mode==="de"&&targetId) ? state.thucdon.find(r=>r.id===targetId) : null;
+  if(rec){ Object.assign(rec,{benhnhan_id:v.meta.benhnhanId, so_ngay:v.meta.soNgay, nguoi_lap:v.meta.nguoiLap, tuan_bat_dau:v.meta.tuanBatDau, engine:"v2", days:[], v2, cauhinh:tdCauHinh(state.benhnhan.find(b=>b.id===v.meta.benhnhanId)||{})}); delete rec.mau; }
+  else{ rec={id:"td_"+Date.now(), benhnhan_id:v.meta.benhnhanId, so_ngay:v.meta.soNgay, nguoi_lap:v.meta.nguoiLap, tuan_bat_dau:v.meta.tuanBatDau, engine:"v2", days:[], v2, cauhinh:tdCauHinh(state.benhnhan.find(b=>b.id===v.meta.benhnhanId)||{})}; state.thucdon.push(rec); }
+  v.meta.recId=rec.id; persistOne("thucdon", rec);
+}
 function nv2PersistEdit(v){
   const rec = v.meta && v.meta.recId ? state.thucdon.find(r=>r.id===v.meta.recId) : null;
   if(!rec) return;
-  rec.v2 = Object.assign({}, rec.v2||{}, {days:nv2SerializeDays(v.days), gv:v.gv, cfg:Object.assign({}, (rec.v2&&rec.v2.cfg)||{}, {chiSo:(v.cfg&&v.cfg.chiSo)||[]})});
+  rec.v2 = Object.assign({}, rec.v2||{}, {lbl:v.lbl||{}, days:nv2SerializeDays(v.days), gv:v.gv, cfg:Object.assign({}, (rec.v2&&rec.v2.cfg)||{}, {chiSo:(v.cfg&&v.cfg.chiSo)||[]})});
   if(DB) persistOne("thucdon", rec);
+}
+function nv2WireLb(wrap){
+  const refresh=()=>{ const v=lastGenV2; if(!v) return; wrap.innerHTML = nv2XlBody(v, nv2ChiSoDefs(v.cfg.chiSo||[])); };
+  wrap.addEventListener("keydown",e=>{
+    const c=e.target.closest&&e.target.closest(".nv2-lb"); if(!c) return;
+    const multi=(c.dataset.lb==="note"||c.dataset.lb==="lTruaToi"||c.dataset.lb==="title");
+    if(e.key==="Enter" && !multi){ e.preventDefault(); c.blur(); }
+    else if(e.key==="Escape"){ e.preventDefault(); c.dataset.cancel="1"; c.blur(); refresh(); }
+  });
+  wrap.addEventListener("paste",e=>{ const c=e.target.closest&&e.target.closest(".nv2-lb"); if(!c) return;
+    e.preventDefault(); const tx=(e.clipboardData||window.clipboardData).getData("text/plain"); document.execCommand("insertText",false,tx); });
+  wrap.addEventListener("focusout",e=>{
+    const c=e.target.closest&&e.target.closest(".nv2-lb"); if(!c || c.dataset.cancel) return;
+    const v=lastGenV2; if(!v) return;
+    const key=c.dataset.lb; let txt=(c.innerText||"").replace(/\u00a0/g," ").replace(/[ \t]+\n/g,"\n").replace(/\n+$/,"").trim();
+    if(key==="id") txt=txt.replace(/\d{2}$/,"");
+    v.lbl=v.lbl||{};
+    const cur = (v.lbl[key]!=null) ? v.lbl[key] : null;
+    if(!txt){ if(cur==null){ refresh(); return; } delete v.lbl[key]; delete nv2LbPref[key]; }
+    else{
+      if(key==="id"? txt===(cur!=null?cur:NV2_LB_DEF.id) : txt===(cur!=null?cur:null)) return;
+      if(cur==null && NV2_LB_DEF[key]!=null && txt===NV2_LB_DEF[key]) return;
+      v.lbl[key]=txt; nv2LbPref[key]=txt;
+    }
+    nv2LbLuu(); nv2PersistEdit(v); refresh();
+    banner("Đã sửa chữ này cho tất cả các ngày.","info");
+  });
 }
 function nv2WireEdit(){
   const wrap=document.getElementById("nv2-xl-wrap"); if(!wrap || nv2Sheet!=="chitiet") return;
@@ -4502,10 +4660,11 @@ function nv2WireEdit(){
     if(e.key==="Enter"){ e.preventDefault(); c.blur(); }
     else if(e.key==="Escape"){ e.preventDefault(); c.dataset.cancel="1"; c.blur(); refresh(); }
   });
-  wrap.addEventListener("focusin",e=>{ const c=e.target.closest&&e.target.closest(".nv2-ed"); if(c){ const rg=document.createRange(); rg.selectNodeContents(c); const s=window.getSelection(); s.removeAllRanges(); s.addRange(rg); } });
+  wrap.addEventListener("focusin",e=>{ const c=e.target.closest&&e.target.closest(".nv2-ed"); if(c){ c.dataset.orig=(c.textContent||"").trim(); const rg=document.createRange(); rg.selectNodeContents(c); const s=window.getSelection(); s.removeAllRanges(); s.addRange(rg); } });
   wrap.addEventListener("focusout",e=>{
     const c=e.target.closest&&e.target.closest(".nv2-ed"); if(!c || c.dataset.cancel) return;
     const v=lastGenV2; if(!v) return;
+    if(c.dataset.orig!=null && (c.textContent||"").trim()===c.dataset.orig){ delete c.dataset.orig; return; }   // chỉ nhấn vào, không sửa → không đánh dấu, không lưu
     const txt=(c.textContent||"").trim().replace(",","."); const val=parseFloat(txt);
     const [day,ref,conv]=c.dataset.ed.split("|").length===3 ? c.dataset.ed.split("|") : [null,null,null];
     if(!(val>=0) || !day){ refresh(); return; }
@@ -4528,7 +4687,7 @@ async function nv2ChupBang(maxPx, only){
   const tables=only||[...document.querySelectorAll("#nv2-xl-wrap table.nv2-xl")]; if(!tables.length) throw new Error("không có bảng để chụp");
   const total=tables.reduce((n,t)=>n+t.offsetHeight+14,0), scale=Math.max(1,Math.min(2,(maxPx||14000)/total));
   const out=[];
-  for(const t of tables) out.push(await html2canvas(t,{scale,backgroundColor:"#ffffff",useCORS:true,onclone:doc=>{ const w=doc.getElementById("nv2-xl-wrap"); if(w){ w.style.overflow="visible"; w.style.maxWidth="none"; w.style.padding="0"; } }}));
+  for(const t of tables) out.push(await html2canvas(t,{scale,backgroundColor:"#ffffff",useCORS:true,onclone:doc=>{ const w=doc.getElementById("nv2-xl-wrap"); if(w){ w.style.overflow="visible"; w.style.maxWidth="none"; w.style.padding="0"; w.querySelectorAll(".nv2-chg,.nv2-kt").forEach(c=>{ c.classList.remove("nv2-chg","nv2-kt"); c.removeAttribute("data-ktmsg"); }); } }}));
   return out;
 }
 /* V258: nút "Sao chép ảnh" / "Tải ảnh" dưới từng bảng ngày */
@@ -4609,6 +4768,7 @@ function nv2ThayTP(v,dayIdx,ref,tp,tenMoi){
     }else{ p.ten=tenMoi; p.tenTuy=tenMoi; if(p.disp!=null) p.disp=tenMoi; }
   });
   v.edited[dayIdx+"|"+ref+"|ten"]=1;
+  { const dish = arr0==="sm"?[d.S] : arr0==="lm"?(nv2TTGiong(d)?[d.L,d.D]:[d.L]) : arr0==="dm"?[d.D] : []; dish.forEach(x=>{ if(x) x.kt=1; }); }   // V296: nguyên liệu đổi → nhắc kiểm tra tên món
   nv2RecalcDay(d,v.gv); return true;
 }
 function nv2NmDong(){ document.getElementById("nm-pop")?.remove(); }
@@ -4636,13 +4796,41 @@ function nv2NmMo(td){
   document.getElementById("nm-ren").addEventListener("click",()=>{ const t=q.value.trim(); if(!t){ q.focus(); return; } xong(null,t); });
   setTimeout(()=>{ document.addEventListener("mousedown",function h(e){ if(!document.getElementById("nm-pop")){ document.removeEventListener("mousedown",h); return; } if(!e.target.closest("#nm-pop")){ nv2NmDong(); document.removeEventListener("mousedown",h); } }); },0);
 }
+function nv2MonMo(td){
+  const v=lastGenV2; if(!v) return; nv2NmDong();
+  const [day,dref]=td.dataset.mon.split("|"), d=v.days[+day]; if(!d) return;
+  const dishes = dref==="S"?[d.S] : (dref==="L"&&nv2TTGiong(d))?[d.L,d.D] : dref==="D"?[d.D] : [d.L];
+  const cur=dishes[0].ten, flag=dishes.some(x=>x.kt);
+  const pop=document.createElement("div"); pop.id="nm-pop"; pop.className="nm-pop";
+  pop.innerHTML=`<div class="nm-t">${flag?"<b style='color:var(--danger)'>⚠ Đã đổi nguyên liệu trong món này.</b> ":""}Tên món hiện tại:</div><input type="text" id="mon-q" autocomplete="off" value="${esc(cur)}">
+    <div class="nm-ft"><div class="nm-h">Tên đúng với nguyên liệu mới thì bấm "Giữ tên". Sai thì sửa tên rồi bấm "Lưu tên". ${dref==="S"?"":"Các món cách nhau bằng dấu –"}</div>
+    <div class="row" style="gap:6px;"><button type="button" class="btn ghost sm" id="mon-giu">Giữ tên</button><button type="button" class="btn sm" id="mon-luu">Lưu tên</button></div></div>`;
+  document.body.appendChild(pop);
+  const r=td.getBoundingClientRect(); pop.style.left=Math.max(8,Math.min(r.left,window.innerWidth-pop.offsetWidth-8))+"px";
+  pop.style.top=Math.max(8,Math.min(r.bottom+4,window.innerHeight-pop.offsetHeight-8))+"px";
+  const q=document.getElementById("mon-q"); q.focus(); q.select();
+  const xong=(ten)=>{
+    dishes.forEach(x=>{ if(ten) x.ten=ten; x.kt=0; });
+    if(ten){ v.edited=v.edited||{}; v.edited[day+"|"+dref+"|tenmon"]=1; }
+    nv2PersistEdit(v); nv2NmDong();
+    const w=document.getElementById("nv2-xl-wrap"); if(w) w.innerHTML=nv2XlBody(v,nv2ChiSoDefs(v.cfg.chiSo||[]));
+    const bar=document.getElementById("nv2-viewbar"); if(bar){ bar.outerHTML=nv2ViewBarHtml(); nv2WireBar(); }
+    banner(ten?"Đã lưu tên món: "+esc(ten):"Đã xác nhận giữ tên món.","info");
+  };
+  document.getElementById("mon-giu").onclick=()=>xong(null);
+  document.getElementById("mon-luu").onclick=()=>{ const t=q.value.trim(); if(!t){ q.focus(); return; } xong(t); };
+  q.addEventListener("keydown",e=>{ if(e.key==="Escape") nv2NmDong(); else if(e.key==="Enter"){ e.preventDefault(); document.getElementById("mon-luu").click(); } });
+  setTimeout(()=>{ document.addEventListener("mousedown",function h(e){ if(!document.getElementById("nm-pop")){ document.removeEventListener("mousedown",h); return; } if(!e.target.closest("#nm-pop")){ nv2NmDong(); document.removeEventListener("mousedown",h); } }); },0);
+}
 function nv2DongMenu(){ document.querySelectorAll(".xp-menu").forEach(m=>{ m.hidden=true; }); document.getElementById("btn-xuat-v2")?.setAttribute("aria-expanded","false"); }
 function nv2WireBar(){
+  document.getElementById("btn-uoc-v2")?.addEventListener("click",()=>{ nv2Uoc=!nv2Uoc; try{ localStorage.setItem("tctd_uoc",nv2Uoc?"1":"0"); }catch(e){} render(); });
   document.querySelectorAll("[data-nv2sheet]").forEach(b=>b.addEventListener("click",()=>{
     nv2View="xl"; nv2Sheet=b.dataset.nv2sheet; render();
   }));
-  { const wrap0=document.getElementById("nv2-xl-wrap"); if(wrap0 && !wrap0.__wired){ wrap0.__wired=1; wrap0.addEventListener("click",e=>{
+  { const wrap0=document.getElementById("nv2-xl-wrap"); if(wrap0 && !wrap0.__wired){ wrap0.__wired=1; nv2WireLb(wrap0); wrap0.addEventListener("click",e=>{
     const nmc=e.target.closest(".nv2-nm"); if(nmc){ nv2NmMo(nmc); return; }
+    const mnc=e.target.closest(".nv2-mon"); if(mnc){ nv2MonMo(mnc); return; }
     const wk=e.target.closest("[data-wk]");
     if(wk){ (async()=>{ const old=wk.innerHTML; wk.disabled=true; wk.textContent="Đang tạo…";
       try{ await nv2XuatBang(wk.dataset.wk); }catch(err){ banner("Không thực hiện được ("+(err&&err.message||err)+").","danger"); }
@@ -4730,10 +4918,11 @@ function renderV2Result(){
   const excl = (v.excluded||[]).length ? `<details style="margin-top:6px;"><summary class="hint" style="cursor:pointer;">${v.excluded.length} món trong kho chưa dùng được (thiếu nguyên liệu trong bảng thực phẩm, chưa ánh xạ hoặc thuộc nhóm Kali cao)</summary>
     <ul style="margin:6px 0 0 18px;font-size:12.5px;">${v.excluded.map(e=>`<li>${esc(e.ten)} — ${esc(e.ly_do)}</li>`).join("")}</ul></details>` : "";
   return `<div class="stack" style="margin-top:18px;">
-    <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div class="row" id="nv2-kq-top" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <h3 style="margin:0;">Kết quả — ${v.days.length} ngày</h3>
-      <div class="row" style="gap:6px;"><button class="btn ghost sm" id="btn-regen-v2">Tạo phương án khác</button><button class="btn secondary sm" id="btn-export-v2">Xuất Excel</button></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;"><button class="btn ghost sm" id="btn-regen-v2">Tạo phương án khác</button><button class="btn secondary sm" id="btn-export-v2">Xuất Excel</button></div>
     </div>
+    <div class="hint" style="margin-top:-4px;">${v.meta&&v.meta.recId?"✓ Đã lưu trong Lịch sử. Chỉnh sửa bên dưới sẽ tự cập nhật bản đã lưu.":"Chưa lưu vào Lịch sử."}</div>
     <div class="hint">Món bốc từ Kho món (${v.poolSize.sang} món sáng, ${v.poolSize.tt} món trưa/tối dùng được). Đạm đã bù vào đạm chính trưa/tối; số hiển thị làm tròn nguyên.</div>
     ${warn}${excl}
     ${nv2ViewBarHtml()}
@@ -4754,7 +4943,7 @@ async function exportExcelV2(bn,v2,startISO,nguoiLap){
   }catch(e){}
   banner("Không thể lưu file trong môi trường này. Hãy dùng nút \"Sao chép bảng này\" rồi dán vào Excel/Google Sheets (giữ màu và ô gộp).","danger");
 }
-function nv2SerializeDays(days){ return days.map(d=>{ const c=JSON.parse(JSON.stringify(d)); delete c.phuGroups; ['S','L','D'].forEach(k=>{ c[k]={id:c[k].id,ten:c[k].ten,cb:c[k].cb||"",nl:(c[k].nl||[]).map(x=>Array.isArray(x)?x[0]:x)}; }); return c; }); }
+function nv2SerializeDays(days){ return days.map(d=>{ const c=JSON.parse(JSON.stringify(d)); delete c.phuGroups; ['S','L','D'].forEach(k=>{ c[k]=Object.assign({id:c[k].id,ten:c[k].ten,cb:c[k].cb||"",nl:(c[k].nl||[]).map(x=>Array.isArray(x)?x[0]:x)}, c[k].kt?{kt:1}:{}); }); return c; }); }
 async function nv2Generate(bn, soNgay, nguoiLap, startISO, regen){
   if(regen) nv2Seed++;
   const cdX = cheDoLay(bn);
@@ -4764,14 +4953,10 @@ async function nv2Generate(bn, soNgay, nguoiLap, startISO, regen){
     const gy = res.lyDo ? `<div style="margin-top:6px;"><b>Gợi ý:</b> kiểm tra lại mục tiêu năng lượng/đạm/glucid/lipid của hồ sơ (các số có khớp nhau không), số phần rau/trái cây/hạt, hoặc bổ sung nguyên liệu cho các món trong Kho món.</div>` : "";
     banner("Không xây dựng được thực đơn: "+esc(res.error)+(ly?`<div style="margin-top:6px;"><b>Lý do:</b></div><ul style="margin:4px 0 0 18px;">${ly}</ul>`:"")+gy,"danger"); lastGenV2=null; return false;
   }
-  lastGenV2 = Object.assign({},res,{meta:{soNgay,nguoiLap,benhnhanId:bn.id,tuanBatDau:startISO}});
+  lastGenV2 = Object.assign({},res,{lbl:Object.assign({},nv2LbPref),meta:{soNgay,nguoiLap,benhnhanId:bn.id,tuanBatDau:startISO}});
   lastGenerated = null;
-  const days = nv2SerializeDays(res.days);   // mảng lồng nhau không lưu được vào DB
-  const rec = {id:"td_"+Date.now(), benhnhan_id:bn.id, so_ngay:soNgay, nguoi_lap:nguoiLap, tuan_bat_dau:startISO, engine:"v2", days:[],
-    v2:{days, gv:res.gv, cfg:res.cfg, warnings:res.warnings, excluded:res.excluded, poolSize:res.poolSize}};
-  state.thucdon.push(rec);
-  lastGenV2.meta.recId = rec.id;
-  if(DB) persistOne("thucdon", rec);
+  // V293: KHÔNG tự lưu vào Lịch sử — chuyên viên bấm "Lưu vào Lịch sử" (có hộp xác nhận) khi đã chọn được phương án ưng ý.
+  lastGenV2.meta.recId = null;
   return true;
 }
 
@@ -5133,8 +5318,10 @@ function wireTao(){
     if(chip){ const k=chip.dataset.chiso; chiSoTheoDoi = chiSoTheoDoi.includes(k) ? chiSoTheoDoi.filter(z=>z!==k) : chiSoTheoDoi.concat([k]); nv2ChiSoCapNhat(); return; }
     const ga=e.target.closest(".vck-ga");
     if(ga){ e.preventDefault(); const ks=[...ga.closest(".vck-grp").querySelectorAll(".vck-chip:not([hidden])")].map(c=>c.dataset.chiso); chiSoTheoDoi = ga.dataset.all==="1" ? chiSoTheoDoi.filter(k=>!ks.includes(k)) : chiSoTheoDoi.concat(ks.filter(k=>!chiSoTheoDoi.includes(k))); nv2ChiSoCapNhat(); return; }
-    if(e.target.closest("#nv2-chiso-tatca")){ const bt=document.getElementById("nv2-chiso-tatca"); const ks=[...document.querySelectorAll(".vck-chip:not([hidden])")].map(c=>c.dataset.chiso); chiSoTheoDoi = chiSoTheoDoi.concat(ks.filter(k=>!chiSoTheoDoi.includes(k))); nv2ChiSoCapNhat(); return; }
-    if(e.target.closest("#nv2-chiso-macdinh")){ chiSoTheoDoi=NV2_CHISO_MAC_DINH.slice(); nv2ChiSoCapNhat(); return; }
+    if(e.target.closest("#nv2-chiso-tatca")){ const bt=document.getElementById("nv2-chiso-tatca");
+      if(bt && bt.dataset.all==="1"){ chiSoTheoDoi=NV2_CHISO_MAC_DINH.slice(); }
+      else { const ks=[...document.querySelectorAll(".vck-chip")].map(c=>c.dataset.chiso); chiSoTheoDoi = chiSoTheoDoi.concat(ks.filter(k=>!chiSoTheoDoi.includes(k))); }
+      nv2ChiSoCapNhat(); return; }
     if(e.target.closest("#nv2-chiso-bohet")){ chiSoTheoDoi=[]; nv2ChiSoCapNhat(); return; }
   });
   nv2ChiSoNhan(); nv2ChiSoFit(); window.addEventListener("resize",nv2ChiSoFit);
@@ -5144,7 +5331,7 @@ function wireTao(){
     document.querySelectorAll(".vck-grp").forEach(g=>{ let n=0; g.querySelectorAll(".vck-chip,.vck-cf").forEach(c=>{ const ok=!q||bo(c.dataset.q).includes(q); c.hidden=!ok; if(ok) n++; }); g.hidden=!n; });
     nv2ChiSoNhan();
   });
-  const chayV2 = async (regen)=>{
+  const chayV2 = async (regen, luu)=>{
     const soNgay = Math.min(30,Math.max(1,parseInt(document.getElementById("inp-songay")?.value)||nv2Form.soNgay||7));
     const nguoiLap = document.getElementById("inp-nguoilap")?.value||nguoiLapHienTai||"(chưa ghi tên)";
     const startISO = document.getElementById("inp-ngaybd")?.value||nv2Form.ngayBd||homNay();
@@ -5152,21 +5339,36 @@ function wireTao(){
     if(!bn){ banner("Chưa chọn bệnh nhân.","danger"); return; }
     nv2Form = {soNgay, ngayBd:startISO};
     const btn = regen ? document.getElementById("btn-regen-v2") : genBtn;
-    if(btn){ btn.disabled=true; btn.textContent="Đang tạo…"; }
+    btnDangChay(btn,"Đang xây dựng…");
     banner("Đang xây dựng thực đơn — có thể mất vài giây…","info");
     await new Promise(r=>setTimeout(r,40));
     const ok = await nv2Generate(bn, soNgay, nguoiLap, startISO, regen);
+    if(ok) nv2GhiSauXay(luu?luu.mode:"khong", luu?luu.target:null);
     if(ok) banner(`Đã tạo ${soNgay} ngày từ Kho món.${(lastGenV2.warnings||[]).length?" Có lưu ý bên dưới.":""}`, (lastGenV2.warnings||[]).length?"warn":"info");
-    render();
+    render(); if(ok) cuonToiKq();
   };
-  if(genBtn) genBtn.onclick = ()=>{ nv2Mode="menu"; chayV2(false); };
+  const hoiRoiXay = (regen)=>{
+    const bn = state.benhnhan.find(b=>b.id===selectedBenhNhanId);
+    if(!bn){ banner("Chưa chọn bệnh nhân.","danger"); return; }
+    hoiLuuTruocXay("v2", bn, (mode,target)=>{ nv2Mode="menu"; chayV2(regen,{mode,target}); }, regen);
+  };
+  if(genBtn) genBtn.onclick = ()=>hoiRoiXay(false);
   document.getElementById("btn-mau")?.addEventListener("click", async ()=>{
     const bn = state.benhnhan.find(b=>b.id===selectedBenhNhanId);
     if(!bn){ banner("Chưa chọn bệnh nhân.","danger"); return; }
-    await nv2BuildMau(bn); render();
+    hoiLuuTruocXay("mau", bn, async (mode,target)=>{
+      clearBanner();   // bỏ thông báo lỗi/cảnh báo của lần xây thực đơn chi tiết trước đó
+      lastGenV2=null;
+      btnDangChay(document.getElementById("btn-mau"),"Đang xây…");
+      await new Promise(r=>setTimeout(r,40));
+      await nv2BuildMau(bn);
+      lastMau.a4ed={}; lastMau.recId=null;
+      mauGhiSauXay(mode,target);
+      render(); cuonToiKq();
+    });
   });
   nv2WireMau();
-  document.getElementById("btn-regen-v2")?.addEventListener("click",()=>chayV2(true));
+  document.getElementById("btn-regen-v2")?.addEventListener("click",()=>hoiRoiXay(true));
   document.getElementById("btn-export-v2")?.addEventListener("click",()=>{
     const bn = state.benhnhan.find(b=>b.id===selectedBenhNhanId);
     if(bn && lastGenV2) exportExcelV2(bn, lastGenV2, lastGenV2.meta.tuanBatDau, lastGenV2.meta.nguoiLap);
@@ -5576,7 +5778,7 @@ const LOAI_TRU_CFG = {
 /* V270: Oxalat gom từ 9 nhóm nhỏ xuống 5 nhóm (khóa từng thực phẩm giữ nguyên nên dữ liệu đã lưu không đổi) */
 (function(){ const O=LOAI_TRU_CFG.oxalat, by={}; O.nhom.forEach(g=>{ by[g.g]=g; });
   const gom=(id,ten,ids)=>({g:id,ten,items:[].concat(...ids.map(i=>by[i].items))});
-  O.nhom=[gom("ox0","Ngũ cốc & bột",["ox0"]), gom("ox1","Rau (lá, chứa hạt, khác)",["ox1","ox7","ox8"]), gom("ox4","Khoai củ",["ox4"]), gom("ox2","Đậu & hạt",["ox2","ox5"]), gom("ox3","Trái cây & khác",["ox3","ox6"])]; })();
+  O.nhom=[gom("ox0","Ngũ cốc, bột & khoai củ",["ox0","ox4"]), gom("ox1","Rau (lá, chứa hạt)",["ox1","ox7"]), gom("ox2","Đậu & hạt",["ox2","ox5"]), gom("ox3","Trái cây & khác",["ox3","ox6","ox8"])]; })();   // V311: gộp ngũ cốc + khoai củ; mọi mục "khác" (kể cả rau khác) về 1 nhóm cuối
 (function(){ ["purin","phospho","oxalat"].forEach(f=>{ const C=LOAI_TRU_CFG[f], nh={purin:"Purin cao",phospho:"Phospho cao",oxalat:"Oxalat cao"}[f]; C.nhom.forEach(g=>g.items.forEach(it=>{ it.nhan=nh; })); }); })();
 const KALI_CAO_ALL = KALI_CAO_DS.rau.concat(KALI_CAO_DS.tb, ...["purin","phospho","oxalat"].flatMap(f=>LOAI_TRU_CFG[f].nhom.map(g=>g.items)));
 function kaliLoaiTruNote(keys){
@@ -5612,7 +5814,7 @@ function gvTyLe(keys, tl){
 }
 const GVA_COL={muoi:"#5B8DB8",hat_nem:"#E0A040",bot_ngot:"#9C7CC4",nuoc_mam:"#C0603A",nuoc_tuong:"#4E9A6B"};
 function gvAdjDoc(){ const el=document.getElementById("bn-gv-adj"); if(!el) return undefined; try{ return JSON.parse(el.dataset.gv||"{}"); }catch(e){ return {}; } }
-function gvAdjKeys(){ let keys=GV_THU_TU.filter(k=>document.querySelector('.bn-giavi[value="'+k+'"]:checked')); return keys.length?keys:["nuoc_mam","muoi"]; }
+function gvAdjKeys(){ let keys=GV_THU_TU.filter(k=>document.querySelector('.bn-giavi[value="'+k+'"]:checked')); return keys; }   // V306: chưa tick = không có gia vị
 function gvAdjRender(){
   const el=document.getElementById("bn-gv-adj"); if(!el) return;
   const NA_T=parseFloat(String((document.getElementById("bn-natri")||{}).value||"").replace(",","."))||0;
@@ -5621,6 +5823,7 @@ function gvAdjRender(){
   let tl={}; try{ tl=JSON.parse(el.dataset.gv||"{}"); }catch(e){}
   const sh=gvTyLe(keys,tl);
   const totEl=document.getElementById("bn-gv-tot");
+  if(!keys.length){ el.innerHTML='<div class="hint" style="display:block">Chưa chọn loại gia vị nào → thực đơn sẽ không có gia vị. Tick loại gia vị ở trên để chia Natri.</div>'; if(totEl) totEl.innerHTML=""; return; }
   if(!NA_T){ el.innerHTML='<div class="hint" style="display:block">Nhập Natri mục tiêu để tính lượng gia vị/ngày.</div>'; if(totEl) totEl.innerHTML=""; return; }
   let cum=0; const segs=keys.map(k=>{ const w=sh[k]; cum+=w; return `<div class="gva-seg" style="width:${w}%;background:${GVA_COL[k]}">${w>=6?GV_DEF[k].ten:""}</div>`; }).join("");
   cum=0; const hds=keys.slice(0,-1).map((k,i)=>{ cum+=sh[k]; return `<div class="gva-h" data-i="${i}" style="left:${cum}%" title="Kéo để đổi tỉ lệ"></div>`; }).join("");
@@ -5657,7 +5860,7 @@ if(!window.__gvAdjBound){ window.__gvAdjBound=1;
 }
 function gvKeHoach(bn, NA_T){
   let keys = GV_THU_TU.filter(k=>(bn&&bn.gia_vi_dang_dung||[]).includes(k));
-  if(!keys.length) keys=["nuoc_mam","muoi"];
+  if(!keys.length) return [];   // V306: chưa tick loại gia vị nào → KHÔNG có gia vị (bỏ mặc định nước mắm + muối)
   NA_T = +NA_T||0; if(!NA_T) return [];
   const sh = gvTyLe(keys, bn&&bn.gia_vi_tl);
   return keys.map(k=>{ const D=GV_DEF[k], amt=gvRound(k, NA_T*sh[k]/100/gvNaPerUnit(k));
@@ -5933,14 +6136,18 @@ function goiYPhanPhoiBua(bn){
     tong[gid] = PHAN_TRAO_DOI[gid].residual ? (computed[gid]||0) : (parseFloat((bn.food_portions||{})[gid])||0);
   });
   const chinhList = ["ngu_coc","dam","rau","dau_mo","dau_hat"];
-  const suaList = ["sua"];
-  const ketQua = {};
+    const ketQua = {};
   PHAN_TRAO_DOI_THU_TU.forEach(gid=>{
     const t = tong[gid]||0;
     if(gid==="ngu_coc" && cheDoDamHienTai(bn).nc==="khoai_bap") ketQua[gid] = chiaNcKhoaiBap(t);
-    else if(chinhList.includes(gid)) ketQua[gid] = {sang:round1(t*0.2), trua:round1(t*0.4), toi:round1(t*0.4), phu:0};
-    else if(suaList.includes(gid)) ketQua[gid] = {sang:round1(t*0.5), trua:0, toi:0, phu:round1(t*0.5)};
-    else ketQua[gid] = {sang:0, trua:0, toi:0, phu:t};
+    else if(chinhList.includes(gid)){   // V307: Sáng 30 : Trưa 35 : Tối 35 — Trưa/Tối chọn tròn đơn vị, Sáng nhận phần còn lại (không âm)
+      // V310: Ngũ cốc: Trưa/Tối làm tròn 0,5 đơn vị và Sáng KHÔNG được cao hơn Trưa/Tối (tăng Trưa/Tối nếu cần); đạm/rau/dầu chia đúng 30:35:35 (làm tròn 0,1)
+      let x;
+      if(gid==="ngu_coc"){ x = Math.round(t*0.35*2)/2; while(2*x>t+1e-9 && x>0) x-=0.5; while(t-2*x>x+1e-9 && 2*(x+0.5)<=t+1e-9) x+=0.5; }
+      else { x = round1(t*0.35); while(x>0 && 2*x>t+1e-9) x = round1(x-0.1); }
+      ketQua[gid] = {sang:Math.max(0,round1(t-2*x)), trua:x, toi:x, phu:0};
+    }
+    else ketQua[gid] = {sang:0, trua:0, toi:0, phu:t};   // sữa và các nhóm còn lại: toàn bộ vào cữ Phụ
   });
   return ketQua;
 }
@@ -6138,7 +6345,7 @@ function loaiTruBlockHtml(bn,f){
     return `<div class="bn-klt-g"><b>${esc(g.ten)}</b><div><div class="bn-klt-rauq">${allRow}<span class="bn-klt-dh">${vis.length?`<button type="button" class="bn-klt-tog">${mo?"▾":"▸"} Chọn từng loại${mo?` (đã chọn ${nT})`:""}</button>`:""}</span></div></div><div class="bn-klt-det" ${mo?"":"hidden"}><div class="row" style="gap:4px 14px;">${vis.map(it=>`<label class="checkfield"><input type="checkbox" class="bn-klt" data-f="${f}" data-g="${gg}"${C.hi&&it.k>C.hi?' data-hi="1"':""} value="${it.key}" ${keys.includes(it.key)?"checked":""}> ${esc(it.ten)} <small${C.hi&&it.k>C.hi?' class="lt-hi"':""}>(${it.k} mg/100g)</small></label>`).join("")}</div></div></div></div>`;
   }).join("");
   return `<div id="cd-${f}-body" class="cd-lt-body" ${cheDoLay(bn)[f]&&cdMo===f?"":"hidden"}>
-    <div style="display:flex;align-items:center;gap:10px;"><label for="cd-${f}-cap" style="display:inline;font-size:13px;font-weight:700;color:var(--ink);">Ngưỡng ${C.ten.toLowerCase()} (mg/ngày)</label><input id="cd-${f}-cap" class="cd-lt-cap" data-f="${f}" type="number" value="${cap}" placeholder="${C.macDinh}" style="width:130px;"></div>
+    ${f==="oxalat"?"":`<div style="display:flex;align-items:center;gap:10px;"><label for="cd-${f}-cap" style="display:inline;font-size:13px;font-weight:700;color:var(--ink);">Ngưỡng ${C.ten.toLowerCase()} (mg/ngày)</label><input id="cd-${f}-cap" class="cd-lt-cap" data-f="${f}" type="number" value="${cap}" placeholder="${C.macDinh}" style="width:130px;"></div>`}
     ${C.ghiChu?`<div class="hint" style="margin-top:4px;">${esc(C.ghiChu)}</div>`:""}
     ${nhomHtml}
   </div>`;
@@ -6173,7 +6380,7 @@ function cheDoPanelHtml(bn){
 }
 function cheDoNoteText(c){
   if(c.than && c.ibs) return "Chọn cả Suy thận và IBS: thực đơn mẫu chỉ hiển thị 1 chế độ nên ưu tiên Suy thận; thực đơn chi tiết áp dụng đồng thời (chế độ thận + loại món không đạt low-FODMAP nếu kho đã gắn nhãn).";
-  if(!c.than && !c.ibs) return "Đang dùng chế độ Bình thường.";
+  if(!c.than && !c.ibs) return "Đang dùng chế độ Sống khỏe.";
   return "";
 }
 function wireCheDo(bn){
@@ -6723,7 +6930,7 @@ function renderBangPhanPhoi(data){
   <div class="tblwrap"><table class="${giongNhau?"pp-gn":""}"><thead><tr><th>Nhóm</th><th>Tổng phần</th><th>Sáng</th><th><span class="pp-t-trua">Trưa</span><span class="pp-t-gn">Trưa/Tối</span></th><th>Tối</th><th>Phụ</th><th>Còn</th></tr></thead>
   <tbody id="bn-bangphanphoi-body">${rows}</tbody></table></div>
   <div class="row" style="margin-top:10px;"><button class="btn secondary sm" id="btn-bn-apdung-tudong">Áp dụng gợi ý phân phối tự động</button></div>
-  <p class="hint" style="margin-top:6px;">Bảng này chuyên gia luôn chỉnh tay tự do theo ý đồ điều trị — nút trên chỉ điền gợi ý khởi điểm (Sáng nhẹ hơn 20%, Trưa/Tối là 2 bữa chính 40%/40%, Phụ dành cho trái cây/hạt/sữa/sản phẩm bổ sung). Cột "Còn" = số phần chưa phân bổ hết (âm nghĩa là đã phân bổ vượt số phần của nhóm).</p>`;
+  <p class="hint" style="margin-top:6px;">Bảng này chuyên gia luôn chỉnh tay tự do theo ý đồ điều trị — nút trên chỉ điền gợi ý khởi điểm (Ngũ cốc/Đạm/Rau/Dầu: Sáng 30%, Trưa/Tối 35% mỗi bữa — riêng Ngũ cốc làm tròn 0,5 và Sáng không cao hơn Trưa/Tối; Phụ dành cho trái cây/hạt/sữa/sản phẩm bổ sung). Chỉnh Sáng hoặc Phụ thì Trưa/Tối tự nhảy lại cho không bị âm. Cột "Còn" = số phần chưa phân bổ hết (âm nghĩa là đã phân bổ vượt số phần của nhóm).</p>`;
 }
 function tinhConPhanPhoi(gid, tongPhan, container){
   const inputs = container.querySelectorAll(`.bn-pp[data-gid="${gid}"]`);
@@ -7151,6 +7358,15 @@ function wireBangSoPhanVaPhanPhoi(){
     if(giongNhau && slot==="trua"){
       const toiEl = bangPhanPhoiArea.querySelector(`.bn-pp-toi[data-gid="${gid}"]`);
       if(toiEl) toiEl.value = e.target.value;
+    }
+    // V307: chỉnh Sáng/Phụ của nhóm chính → Trưa/Tối tự nhảy lại (số tròn đơn vị) để phần còn lại không bị âm
+    if((slot==="sang"||slot==="phu") && ["ngu_coc","dam","rau","dau_mo","dau_hat"].includes(gid)){
+      const g = sl => bangPhanPhoiArea.querySelector(`.bn-pp[data-gid="${gid}"][data-slot="${sl}"]`);
+      const bn0 = docFormBenhNhan(), comp = computePhanTraoDoi(bn0), def0 = PHAN_TRAO_DOI[gid];
+      const tong = def0.residual ? (comp[gid]||0) : (parseFloat((bn0.food_portions||{})[gid])||0);
+      const rem = Math.max(0, tong - (parseFloat(g("sang").value)||0) - (parseFloat(g("phu").value)||0));
+      let x = (gid==="ngu_coc") ? Math.floor(rem/2*2+1e-9)/2 : round1(rem/2); while(x>0 && 2*x>rem+1e-9) x = round1(x-0.1);
+      g("trua").value = x; g("toi").value = giongNhau ? x : Math.max(0, round1(rem - x));
     }
     refreshBangPhanPhoi();
   });
@@ -8362,6 +8578,9 @@ function wireEvents(){
   fi?.addEventListener("change",()=>{ const f=fi.files&&fi.files[0]; if(f) khoiPhucDuLieu(f).catch(e=>banner("Không khôi phục được: "+esc(e.message||e),"danger")); fi.value=""; });
   document.getElementById("btn-dang-xuat")?.addEventListener("click",()=>{ supaSaveSess(null); location.reload(); });
 })();
+/* V308: ô số đang là 0 → bấm vào để nhập thì số 0 tự mất (rời ô mà để trống thì trả về 0) */
+document.addEventListener("focusin",e=>{ const el=e.target; if(el && el.tagName==="INPUT" && (el.type==="number"||el.dataset.num==="1") && !el.readOnly && !el.disabled && el.value!=="" && /^0([.,]0*)?$/.test(el.value)){ el.dataset.was0="1"; el.value=""; } });
+document.addEventListener("focusout",e=>{ const el=e.target; if(el && el.tagName==="INPUT" && el.dataset && el.dataset.was0){ delete el.dataset.was0; if(el.value==="") el.value="0"; } });
 (async function boot(){
   switchTab("tao");
   await initDb();
