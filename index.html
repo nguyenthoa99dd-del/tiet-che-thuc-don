@@ -1,5 +1,6 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 
+
 <title>Tiết Chế Thực Đơn</title>
 <meta name="description" content="Công cụ dinh dưỡng lâm sàng: tra cứu thực phẩm, tính nhu cầu dinh dưỡng, hồ sơ bệnh nhân, kho món, và xây dựng thực đơn suy thận với thuật toán ngân sách Kali + xuất Excel.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -504,6 +505,20 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
 .cc-ck input:disabled+span{opacity:.35;cursor:not-allowed;}
 tr.cc-off .cc-ten b{color:var(--ink-soft);text-decoration:line-through;}
 .cc-so{padding:4px 6px;}
+.cc-tbl{min-width:0;table-layout:fixed;}
+.cc-tbl th,.cc-tbl td{padding:5px 3px;}
+.cc-tbl th.cc-ph{width:auto;font-size:10.5px;line-height:1.25;padding:5px 2px;}
+.cc-tbl th:first-child,.cc-tbl td.cc-ten{width:140px;}
+.cc-tbl th:last-child,.cc-tbl tr td:last-child{width:34px;}
+.cc-tbl .cc-xoa{padding:2px 6px;}
+.cc-ck span{width:24px;height:24px;}
+.cc-tbl th.cc-gc,.cc-tbl th.cc-gp{text-align:center;font-size:11.5px;color:#fff;letter-spacing:.03em;}
+.cc-tbl th.cc-gc{background:#2F5C8F;} .cc-tbl th.cc-gp{background:#2E6B57;}
+.cc-tbl th.cc-c{background:#E4ECF5;} .cc-tbl th.cc-p{background:#E2EFE8;}
+.cc-tbl .cc-ten{min-width:0;white-space:nowrap;}
+.cc-ten label.cc-dung{display:inline-flex;vertical-align:middle;margin-right:6px;}
+.cc-tbl .cc-ten input.cc-tenin{width:98px;max-width:98px;box-sizing:border-box;padding:3px 5px;font-weight:600;font-size:12px;}
+tr.cc-off .cc-tenin{text-decoration:line-through;color:var(--ink-soft);}
 @media(max-width:1000px){.tp-toolbar.mon-toolbar{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:620px){.tp-toolbar.mon-toolbar{grid-template-columns:minmax(0,1fr);}}
 .mon-table td.mon-ten{min-width:220px;white-space:normal;}
@@ -771,6 +786,10 @@ button:active{transform:translateY(.5px);}
 .nn-head{position:sticky;top:-20px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);margin:-20px -22px 8px;padding:16px 22px 10px;border-bottom:1px solid var(--border);}
 .nn-x{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
 .nn-x:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+/* V417: banner khách — bỏ chữ viết tắt, tên khách là điểm nhấn */
+.hero-name{font-size:32px;font-weight:700;letter-spacing:-.015em;line-height:1.15;text-shadow:0 1px 0 rgba(0,0,0,.12);}
+.hero-chips{margin-top:9px;}
+@media(max-width:600px){.hero-name{font-size:26px;}}
 @media (max-width:900px){.shell{flex-direction:column;}.patient-rail{width:100%;border-right:none;border-bottom:1px solid var(--border);}.pr-list{max-height:260px;}}
 </style>
 
@@ -7118,10 +7137,21 @@ const NV2_MAP_KHO = {"Hành lá/rau mùi":[null,"gv",0,""],"Cà rốt":["nin_400
    Lưu chung trên kho (collection "mon", id "_cocau_bua", bua "_cfg"); engine NV2 ghép món lẻ đúng theo bảng tick này. */
 const CC_CHINH=[["kho","Kho / Rim / Ram / Rang"],["xao_rau","Xào / Sốt – có kèm rau củ"],["xao","Xào / Sốt – không kèm rau"],["chien","Chiên / Áp chảo / Nướng / Quay"],["hap","Hấp / Chưng / Luộc / Nhúng"],["om","Om / Hầm / Cà ri"],["goi_dam","Gỏi / trộn có đạm (làm món chính)"]];
 const CC_PHU=[["rau_hl","Rau củ hấp / luộc"],["rau_xao","Rau củ xào"],["rau_kho","Rau củ kho / rim"],["rau_chien","Rau củ chiên / nướng"],["canh_kd","Canh không đạm"],["canh_cd","Canh có đạm"],["goi_kd","Rau sống / gỏi không đạm"]];
-const CC_SO=["1","2","1–2","3"];
-const CC_MAC_DINH={kho:{dung:1,phu:["rau_hl","rau_xao","canh_kd"],so:"2"},xao_rau:{dung:1,phu:["rau_hl","canh_kd"],so:"1"},xao:{dung:1,phu:["rau_hl","rau_xao","canh_kd"],so:"2"},chien:{dung:1,phu:["rau_hl","canh_kd","goi_kd"],so:"2"},hap:{dung:1,phu:["rau_hl","rau_xao","canh_kd"],so:"2"},om:{dung:1,phu:["rau_hl","canh_kd"],so:"1–2"},goi_dam:{dung:0,phu:[],so:"1–2"}};
 const CC_ID="_cocau_bua";
-function ccCauHinh(monList){ const r=(monList||[]).find(m=>m&&m.id===CC_ID); const c=(r&&r.cfg)?r.cfg:{}; const o={}; CC_CHINH.forEach(([k])=>{ o[k]=Object.assign({},CC_MAC_DINH[k],c[k]||{}); }); return o; }
+const CC_MAC_DINH_ROWS=[
+  {ten:"Cơ cấu 1a",dung:1,chinh:["kho","hap"],phu:["rau_hl","rau_xao"]},
+  {ten:"Cơ cấu 1b",dung:1,chinh:["kho","hap"],phu:["rau_hl","canh_kd"]},
+  {ten:"Cơ cấu 2a",dung:1,chinh:["xao_rau"],phu:["rau_hl"]},
+  {ten:"Cơ cấu 2b",dung:1,chinh:["xao_rau"],phu:["canh_kd"]},
+  {ten:"Cơ cấu 3a",dung:1,chinh:["chien"],phu:["rau_hl","goi_kd"]},
+  {ten:"Cơ cấu 3b",dung:1,chinh:["chien"],phu:["canh_kd","goi_kd"]},
+  {ten:"Cơ cấu 4",dung:1,chinh:["xao","xao_rau"],phu:["canh_cd","rau_hl"]},
+  {ten:"Cơ cấu 5",dung:1,chinh:["om"],phu:["rau_hl"]}];
+/* 29/10: cơ cấu = HÀNG NGANG (Cơ cấu 1, 2, 3… thêm/bớt tùy ý); mọi loại món = CỘT DỌC.
+   Trong 1 hàng: các cột MÓN CHÍNH đã tick = món chính được chọn 1 trong các loại đó; mỗi cột MÓN PHỤ đã tick = bữa có 1 món loại đó. */
+function ccCauHinh(monList){ const r=(monList||[]).find(m=>m&&m.id===CC_ID); const c=(r&&r.cfg)||{};
+  if(Array.isArray(c.rows)) return {rows:c.rows.map(x=>({ten:x.ten||"",dung:x.dung?1:0,chinh:(x.chinh||[]).slice(),phu:(x.phu||[]).slice()}))};
+  return {rows:JSON.parse(JSON.stringify(CC_MAC_DINH_ROWS))}; }
 const NV2 = (function(){
   const D = NV2_DATA;
   const NFC = s => String(s).normalize("NFC");
@@ -7400,41 +7430,40 @@ const NV2 = (function(){
     const sang=xep(sangOk).filter(d=>rauCount(d.nl)>=1).slice(0,POOL_SANG);
     // nguồn 2: ghép món lẻ
     const ok=[]; const lay=b=>mon.filter(d=>d.bua===b && d.nl && d.nl.length).filter(d=>{ const w=loc(d); if(w){ exN++; return false; } return true; });
-    // 28/10: ghép theo BẢNG TICK cơ cấu bữa của chuyên gia
-    const CC=ccCauHinh(mon);
+    // 29/10: ghép theo BẢNG CƠ CẤU (hàng = cơ cấu, cột = loại món)
+    const CCR=ccCauHinh(mon).rows.filter(r=>r.dung && r.chinh.length && r.phu.length);
+    const chinhDung=new Set(CCR.flatMap(r=>r.chinh));
     const phuDS={}; CC_PHU.forEach(([k])=>{ phuDS[k]=[]; });
     ["rau","canh","goi"].forEach(b=>{ lay(b).forEach(d=>{ const t=ccLoaiPhu(d); if(t && rauCount(d.nl)>=1) phuDS[t].push(d); }); });
     Object.keys(phuDS).forEach(k=>{ phuDS[k]=xep(phuDS[k]); });
-    const chinh=xep(lay("chinh").concat(lay("goi"))).filter(d=>{ const t=ccLoaiChinh(d); return t && CC[t] && CC[t].dung; });
+    const chinh=xep(lay("chinh").concat(lay("goi"))).filter(d=>{ const t=ccLoaiChinh(d); return t && chinhDung.has(t); });
     const pick = arr => arr.length ? arr[Math.floor(rng()*Math.min(arr.length,40))] : null;
-    const tronLoai = a => { const b=a.slice(); for(let i=b.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; };
-    const soPhu = so => so==="1"?1:so==="2"?2:so==="3"?3:(rng()<0.5?1:2);
+    const tron = a => { const c=a.slice(); for(let i=c.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [c[i],c[j]]=[c[j],c[i]]; } return c; };
     const tt2=[]; const can=Math.max(0,POOL_TT-tt1.length), byDam={};
     chinh.forEach(d=>{ (byDam[d.dam_nhom||"khac"]=byDam[d.dam_nhom||"khac"]||[]).push(d); });
     const keys=Object.keys(byDam); let ki=0, guard=0;
     while(tt2.length<can && keys.some(k=>byDam[k].length) && guard++<6000){
       const k=keys[ki++%keys.length]; const m=byDam[k].shift(); if(!m) continue;
-      const row=CC[ccLoaiChinh(m)]; const loai=(row.phu||[]).filter(t=>phuDS[t]&&phuDS[t].length);
-      if(!loai.length) continue;
-      const mP=new Set(mainProteins(m));
-      let best=null;
-      for(let tl=0; tl<4 && !best; tl++){
-        const n=Math.min(soPhu(row.so),loai.length); const sides=[]; let coCanh=false;
-        for(const t of tronLoai(loai)){
-          if(sides.length>=n) break;
-          const laCanh=/^canh/.test(t); if(laCanh&&coCanh) continue;   // không 2 canh trong 1 bữa
-          let ds=phuDS[t]; if(t==="canh_cd") ds=ds.filter(c=>!mainProteins(c).some(p=>mP.has(p)));   // canh có đạm: khác đạm món chính
-          const rauDa=new Set([m,...sides].flatMap(x=>x.nl.map(norm).filter(n=>MAP[n]&&MAP[n][1]==="rau").map(n=>MAP[n][0])));
-          let c=null; for(let tr=0;tr<5&&!c;tr++){ const x=pick(ds); if(x && !x.nl.map(norm).some(n=>MAP[n]&&MAP[n][1]==="rau"&&MAP[n][0]&&rauDa.has(MAP[n][0])&&!["nin_4007","nin_4005"].includes(MAP[n][0]))) c=x; }   // tránh 2 món phụ cùng loại rau chính (trừ cà rốt, cà chua)
-          if(!c) continue; sides.push(c); if(laCanh) coCanh=true;
+      const lc=ccLoaiChinh(m); const rows=tron(CCR.filter(r=>r.chinh.includes(lc)));
+      const mP=new Set(mainProteins(m)); let best=null, rowT="";
+      for(const row of rows){
+        for(let tl=0; tl<3 && !best; tl++){
+          const sides=[]; let ok=true;
+          for(const t of row.phu){
+            let ds=phuDS[t]||[]; if(t==="canh_cd") ds=ds.filter(c=>!mainProteins(c).some(p=>mP.has(p)));   // canh có đạm: khác đạm món chính
+            const rauDa=new Set([m,...sides].flatMap(x=>x.nl.map(norm).filter(n=>MAP[n]&&MAP[n][1]==="rau").map(n=>MAP[n][0])));
+            let c=null; for(let tr=0;tr<5&&!c;tr++){ const x=pick(ds); if(x && !sides.includes(x) && !x.nl.map(norm).some(n=>MAP[n]&&MAP[n][1]==="rau"&&MAP[n][0]&&rauDa.has(MAP[n][0])&&!["nin_4007","nin_4005"].includes(MAP[n][0]))) c=x; }   // tránh trùng rau chính (trừ cà rốt, cà chua)
+            if(!c){ ok=false; break; } sides.push(c);
+          }
+          if(!ok) break;
+          const nl=[...new Set([m,...sides].flatMap(x=>x.nl.map(norm)))];
+          if(rauCount(nl)>=2){ best={sides,nl}; rowT=row.ten; }
         }
-        if(!sides.length) continue;
-        const nl=[...new Set([m,...sides].flatMap(x=>x.nl.map(norm)))];
-        if(rauCount(nl)>=2) best={sides,nl};
+        if(best) break;
       }
       if(!best) continue;
       const parts=[m,...best.sides];
-      tt2.push({id:"cp_"+parts.map(x=>x.id.replace(/^m[kc]_/,"")).join("_"), ten:parts.map(x=>x.ten).join(" – "), bua:"tt", ghep:parts.map(x=>x.id), nguon_boc:2, co_cau:ccLoaiChinh(m),
+      tt2.push({id:"cp_"+parts.map(x=>x.id.replace(/^m[kc]_/,"")).join("_"), ten:parts.map(x=>x.ten).join(" – "), bua:"tt", ghep:parts.map(x=>x.id), nguon_boc:2, co_cau:rowT,
                 cb:m.cb, dam_nhom:m.dam_nhom, nl:best.nl, benh_ly:m.benh_ly||[], low_fodmap: parts.some(x=>x.low_fodmap===false)?false:(parts.every(x=>x.low_fodmap===true)?true:undefined)});
     }
     tt1.forEach(d=>{ d.nguon_boc=1; });
@@ -9607,7 +9636,6 @@ function renderTao(){
   // LUÔN hiển thị kể cả khi form đang mở bên dưới, để không bị "kẹt" trong 1 form mà không thấy đường quay lại/thêm mới.
   const hasBn = state.benhnhan.length>0;
   const heroHtml = (hasBn && currentBn) ? `<div class="hero">
-      <div class="hero-av">${esc(avatarInitials(currentBn.ten))}</div>
       <div class="hero-main"><div class="hero-name">${esc(currentBn.ten)}</div><div class="hero-chips" id="bn-summary"></div></div>
       <button class="hero-btn" id="btn-tao-sua" type="button">Chỉnh sửa hồ sơ</button>
       <div class="hero-stats" id="bn-stats" hidden></div>
@@ -9616,7 +9644,6 @@ function renderTao(){
   const pickerHtml = heroHtml + ((!bnFormMode && hasBn)?`
     <div class="card cfg-card cfg-split">
       <div class="cfg-left"><div class="cfg-sec-t">Thiết lập chung</div>
-      ${cungMonHtml(currentBn)}
       ${cheDoPanelHtml(currentBn)}
       </div>
       <div class="cfg-right"><div class="cfg-sec-t">Xây thực đơn</div>
@@ -10764,7 +10791,8 @@ function monChonThieu(bn){
 // V156: chế độ Ngũ cốc "Cữ phụ khoai/bắp" → chia đơn vị Ngũ cốc: Sáng 25% / Trưa 25% / Tối 25% / Phụ 25% tổng đơn vị
 // (phần Phụ sau đó được quy về khối lượng món khoai/bắp ở cữ phụ trưa). Làm tròn 0,1; Phụ lấy phần còn lại để tổng khớp.
 function chiaNcKhoaiBap(tong){
-  const s = round1((tong||0)*0.25), phu = Math.max(0, round1((tong||0) - 3*s));
+  const t0=tong||0; let s = Math.round(t0*0.25*2)/2; while(3*s>t0+1e-9 && s>0) s-=0.5;   // V419: 25% mỗi bữa chính làm tròn 0,5; phần lẻ dồn vào Phụ
+  const phu = Math.max(0, round1(t0 - 3*s));
   return {sang:s, trua:s, toi:s, phu};
 }
 // Gợi ý phân phối bữa ăn (Sáng/Trưa/Tối/Phụ) — chỉ là điểm khởi đầu, tiết chế viên luôn chỉnh tay tự do được (theo yêu cầu 23/09/2026)
@@ -10781,7 +10809,7 @@ function ppTuCanBang(gid, slot, tong, get, set, giong){
     if(phu>tong+1e-9){ phu=Math.max(0,round1(tong)); set("phu",phu); }
     if(sang+phu>tong+1e-9){ if(slot==="sang"){ phu=Math.max(0,round1(tong-sang)); set("phu",phu); } else { sang=Math.max(0,round1(tong-phu)); set("sang",sang); } }
     const rem=Math.max(0, tong-sang-phu);
-    let x=(gid==="ngu_coc")?Math.floor(rem/2*2+1e-9)/2:round1(rem/2); while(x>0&&2*x>rem+1e-9) x=round1(x-0.1);
+    let x=Math.floor(rem/2*2+1e-9)/2; while(x>0&&2*x>rem+1e-9) x=round1(x-0.5);   // V419: Trưa/Tối luôn bội của 0,5
     set("trua",x); set("toi", giong?x:Math.max(0,round1(rem-x)));
   } else if(slot==="sang"||slot==="trua"||slot==="toi"){
     const t=giong?f("trua"):f("toi");
@@ -10803,7 +10831,9 @@ function goiYPhanPhoiBua(bn){
       // V310: Ngũ cốc: Trưa/Tối làm tròn 0,5 đơn vị và Sáng KHÔNG được cao hơn Trưa/Tối (tăng Trưa/Tối nếu cần); đạm/rau/dầu chia đúng 30:35:35 (làm tròn 0,1)
       let x;
       if(gid==="ngu_coc"){ x = Math.round(t*0.35*2)/2; while(2*x>t+1e-9 && x>0) x-=0.5; while(t-2*x>x+1e-9 && 2*(x+0.5)<=t+1e-9) x+=0.5; }
-      else { x = round1(t*0.35); while(x>0 && 2*x>t+1e-9) x = round1(x-0.1); }
+      else {   // V419: đạm/rau/dầu: Trưa/Tối ≈ 35% làm tròn 0,5, phần lẻ dồn vào Sáng; tổng quá nhỏ (Sáng sẽ vượt Trưa/Tối) thì chia 30:35:35 làm tròn 0,1 như cũ
+        x = Math.round(t*0.35*2)/2; while(x>0 && 2*x>t+1e-9) x -= 0.5;
+        if(t-2*x > x+1e-9){ x = round1(t*0.35); while(x>0 && 2*x>t+1e-9) x = round1(x-0.1); } }
       ketQua[gid] = {sang:Math.max(0,round1(t-2*x)), trua:x, toi:x, phu:0};
     }
     else ketQua[gid] = {sang:0, trua:0, toi:0, phu:t};   // sữa và các nhóm còn lại: toàn bộ vào cữ Phụ
@@ -11022,15 +11052,17 @@ function luuDonCom(bn){   // ghi lựa chọn Độn vào cơm + tên hạt vào
   try{ persistOne("benhnhan", bn); }catch(e){}
 }
 function donComTomTat(c){ const ch=c.donComChon||{}, t=[ch.khoai?"khoai/bắp":"", ch.dau?"đậu":"", ch.hat?"hạt có dầu":""].filter(Boolean); return t.length?(" · "+t.join(", ")):""; }
-function cungMonHtml(bn){
+function cungMonHtml(bn,part){   // V418: part "cm" = ô "Trưa và Tối cùng món" (chỉ thực đơn chi tiết); part "dc" = menu "Độn vào cơm" (dùng chung mẫu + chi tiết)
   if(!bn) return "";
   const c=cheDoLay(bn);
   const fp=bn.food_portions||{}, md=bn.meal_distribution||{}, ch=c.donComChon||{};
   const ops=[["khoai","Khoai/bắp",(+((md.ngu_coc||{}).phu)||0)>0],["dau","Đậu",(+fp.dau_hat||0)>0],["hat","Hạt có dầu",(+fp.hat_co_dau||0)>0]].filter(x=>x[2]);
   const menu = ops.length ? ops.map(([k,t])=>`<label><input type="checkbox" class="cd-dc-op" data-k="${k}" ${ch[k]?"checked":""}> ${t}</label>`+(k==="hat"?`<input type="text" id="cd-hat-ten" class="cd-hat-ten" placeholder="Loại hạt: vd hạnh nhân, hạt điều" value="${esc(c.hatTen||"")}" title="Điền 1 loại hoặc nhiều loại (cách nhau dấu phẩy) — hiển thị trên thực đơn dạng loại 1/loại 2">`:"")).join("") : `<div style="padding:6px 10px;font-size:12.5px;color:var(--ink-soft);max-width:230px;">Hồ sơ chưa có khoai/bắp cữ phụ, đậu hoặc hạt có dầu để độn.</div>`;
-  return `<div class="cd-wrap cd-cm"><div class="cd-chips"><label class="cd-tg"><input type="checkbox" id="cd-cungmon" ${c.cungMon?"checked":""}><i></i><span>Trưa và Tối cùng món</span></label>
+  const cmLb=`<label class="cd-tg"><input type="checkbox" id="cd-cungmon" ${c.cungMon?"checked":""}><i></i><span>Trưa và Tối cùng món</span></label>`;
+  if(part==="cm") return cmLb;
+  return `${part==="dc"?"":`<div class="cd-wrap cd-cm"><div class="cd-chips">${cmLb}`}
     <div class="cd-dd"><button type="button" id="cd-doncom-btn" class="cd-tg cd-kali-pill${c.donCom?" on":""}${dcMenuMo?" cd-open":""}" title="Khoai/bắp, đậu, hạt có dầu của cữ phụ được nấu độn vào cơm Trưa và Tối (chia 50:50) — bấm để chọn loại"><span id="cd-doncom-lb">Độn vào cơm${donComTomTat(c)}</span> <span style="font-size:11px;">▾</span></button>
-      <div class="cd-dd-menu" id="cd-dc-menu" ${dcMenuMo?"":"hidden"}>${menu}</div></div></div></div>`;
+      <div class="cd-dd-menu" id="cd-dc-menu" ${dcMenuMo?"":"hidden"}>${menu}</div></div>${part==="dc"?"":`</div></div>`}`;
 }
 function cheDoPanelHtml(bn,part){   // V414: part "ct" = Purin/ĐTĐ/Phospho/Oxalat (chỉ cho thực đơn chi tiết); mặc định = Suy thận/IBS/Kali (dùng chung mẫu + chi tiết)
   if(!bn) return "";
@@ -11044,6 +11076,7 @@ function cheDoPanelHtml(bn,part){   // V414: part "ct" = Purin/ĐTĐ/Phospho/Oxa
       ${row("cd-dtd",c.dtd,"ĐTĐ")}
       ${row("cd-phospho",c.phospho,"Phospho","phospho")}
       ${row("cd-oxalat",c.oxalat,"Oxalat","oxalat")}
+      ${cungMonHtml(bn,"cm")}
     </div>
     ${loaiTruBlockHtml(bn,"purin")}
     ${loaiTruBlockHtml(bn,"phospho")}
@@ -11055,6 +11088,7 @@ function cheDoPanelHtml(bn,part){   // V414: part "ct" = Purin/ĐTĐ/Phospho/Oxa
       ${row("cd-than",c.than,"Suy thận")}
       ${row("cd-ibs",c.ibs,"IBS (FODMAP)")}
       ${kb.pill}
+      ${cungMonHtml(bn,"dc")}
     </div>
     ${kb.body}
     ${lt.length?`<details style="margin-top:6px;"><summary style="cursor:pointer;font-size:12.5px;">Lưu ý lâm sàng từ tình trạng đặc biệt/thuốc (${lt.length})</summary><ul style="margin:6px 0 0 18px;font-size:12.5px;">${lt.map(x=>`<li>${esc(x.text)}</li>`).join("")}</ul></details>`:""}
@@ -11659,7 +11693,7 @@ function renderBangPhanPhoi(data){
   <div class="tblwrap"><table class="${giongNhau?"pp-gn":""}"><thead><tr><th>Nhóm</th><th>Tổng phần</th><th>Sáng</th><th><span class="pp-t-trua">Trưa</span><span class="pp-t-gn">Trưa/Tối</span></th><th>Tối</th><th>Phụ</th><th>Còn</th></tr></thead>
   <tbody id="bn-bangphanphoi-body">${rows}</tbody></table></div>
   <div class="row" style="margin-top:10px;"><button class="btn secondary sm" id="btn-bn-apdung-tudong">Áp dụng gợi ý phân phối tự động</button></div>
-  <p class="hint" style="margin-top:6px;">Bảng này chuyên gia luôn chỉnh tay tự do theo ý đồ điều trị — nút trên chỉ điền gợi ý khởi điểm (Ngũ cốc/Đạm/Rau/Dầu: Sáng 30%, Trưa/Tối 35% mỗi bữa — riêng Ngũ cốc làm tròn 0,5 và Sáng không cao hơn Trưa/Tối; Phụ dành cho trái cây/hạt/sữa/sản phẩm bổ sung). Chỉnh Sáng hoặc Phụ thì Trưa/Tối tự nhảy lại cho không bị âm. Cột "Còn" = số phần chưa phân bổ hết (âm nghĩa là đã phân bổ vượt số phần của nhóm).</p>`;
+  <p class="hint" style="margin-top:6px;">Bảng này chuyên gia luôn chỉnh tay tự do theo ý đồ điều trị — nút trên chỉ điền gợi ý khởi điểm (Ngũ cốc/Đạm/Rau/Dầu: Trưa/Tối ≈ 35% mỗi bữa, làm tròn 0,5; phần lẻ dồn vào Sáng — riêng Ngũ cốc khoai/bắp chia ≈ 25% mỗi bữa chính, phần lẻ dồn vào Phụ, và Ngũ cốc thường thì Sáng không cao hơn Trưa/Tối; Phụ còn dành cho trái cây/hạt/sữa/sản phẩm bổ sung). Chỉnh Sáng hoặc Phụ thì Trưa/Tối tự nhảy lại cho không bị âm. Cột "Còn" = số phần chưa phân bổ hết (âm nghĩa là đã phân bổ vượt số phần của nhóm).</p>`;
 }
 function tinhConPhanPhoi(gid, tongPhan, container){
   const inputs = container.querySelectorAll(`.bn-pp[data-gid="${gid}"]`);
@@ -12686,24 +12720,25 @@ function ccDemMon(){
   state.mon.forEach(m=>{ const a=NV2.ccLoaiChinh(m); if(a) c[a]++; const b=NV2.ccLoaiPhu(m); if(b) c[b]++; });
   return c;
 }
+let ccNhap=null;   // bản nháp đang sửa trên màn hình (chưa lưu)
 function ccBangHtml(){
-  const CC=ccCauHinh(state.mon), N=ccDemMon();
-  const da=state.mon.some(m=>m.id===CC_ID);
-  const th=CC_PHU.map(([k,t])=>`<th class="cc-ph">${esc(t)}<small>${N[k]} món</small></th>`).join("");
-  const rows=CC_CHINH.map(([k,t])=>{ const r=CC[k];
-    const cells=CC_PHU.map(([p])=>`<td class="cc-td"><label class="cc-ck"><input type="checkbox" class="cc-phu" data-c="${k}" data-p="${p}" ${r.phu.includes(p)?"checked":""} ${r.dung?"":"disabled"}><span></span></label></td>`).join("");
-    return `<tr class="${r.dung?"":"cc-off"}"><td class="cc-ten"><label class="cc-dung"><input type="checkbox" class="cc-use" data-c="${k}" ${r.dung?"checked":""}> <b>${esc(t)}</b></label><small>${N[k]} món chính</small></td>${cells}
-      <td class="cc-td"><select class="cc-so" data-c="${k}" ${r.dung?"":"disabled"}>${CC_SO.map(x=>`<option ${r.so===x?"selected":""}>${x}</option>`).join("")}</select></td></tr>`; }).join("");
-  return `<details class="card cc-card" ${ccMo?"open":""} id="cc-wrap"><summary><b>Cơ cấu bữa trưa/tối</b> <span class="hint">— tick món phụ được đi kèm từng loại món chính; khi xây thực đơn sẽ ghép món đúng theo bảng này ${da?"(đã lưu)":"(đang dùng mặc định theo 3 cơ cấu đã chốt)"}</span></summary>
-    <div class="tblwrap" style="margin-top:10px;"><table class="cc-tbl"><thead><tr><th>Món chính <small>(bỏ tick = không dùng)</small></th>${th}<th class="cc-ph">Số món phụ / bữa</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="hint" style="margin-top:8px;">Mỗi bữa = cơm + 1 món chính + số món phụ đã chọn, lấy ngẫu nhiên trong các loại đã tick. Không 2 canh trong 1 bữa; canh có đạm phải khác loại đạm với món chính; mỗi bữa ≥ 2 loại rau củ. Combo trưa/tối ghép sẵn vẫn được ưu tiên dùng trước.</div>
-    <div class="row" style="margin-top:10px;gap:8px;"><button class="btn sm" id="cc-luu">Lưu cơ cấu</button><button class="btn ghost sm" id="cc-macdinh">Về mặc định</button></div>
+  const N=ccDemMon(); if(!ccNhap) ccNhap=ccCauHinh(state.mon);
+  const da=state.mon.some(m=>m.id===CC_ID), R=ccNhap.rows;
+  const thC=CC_CHINH.map(([k,t])=>`<th class="cc-ph cc-c">${esc(t)}<small>${N[k]} món</small></th>`).join("");
+  const thP=CC_PHU.map(([k,t])=>`<th class="cc-ph cc-p">${esc(t)}<small>${N[k]} món</small></th>`).join("");
+  const ck=(i,g,k,on,dis)=>`<td class="cc-td"><label class="cc-ck"><input type="checkbox" class="cc-x" data-i="${i}" data-g="${g}" data-k="${k}" ${on?"checked":""} ${dis?"disabled":""}><span></span></label></td>`;
+  const rows=R.map((r,i)=>`<tr class="${r.dung?"":"cc-off"}"><td class="cc-ten"><label class="cc-dung"><input type="checkbox" class="cc-use" data-i="${i}" ${r.dung?"checked":""}></label><input class="cc-tenin" data-i="${i}" value="${esc(r.ten)}"></td>
+      ${CC_CHINH.map(([k])=>ck(i,"chinh",k,r.chinh.includes(k),!r.dung)).join("")}${CC_PHU.map(([k])=>ck(i,"phu",k,r.phu.includes(k),!r.dung)).join("")}
+      <td class="cc-td"><button type="button" class="btn ghost sm cc-xoa" data-i="${i}" title="Xoá cơ cấu này">✕</button></td></tr>`).join("");
+  return `<details class="card cc-card" ${ccMo?"open":""} id="cc-wrap"><summary><b>Cơ cấu bữa trưa/tối</b> <span class="hint">— mỗi hàng là 1 cơ cấu; tick loại món chính (chọn 1 trong các loại đã tick) và các món phụ đi kèm ${da?"(đã lưu)":"(đang dùng mặc định)"}</span></summary>
+    <div class="tblwrap" style="margin-top:10px;"><table class="cc-tbl"><thead>
+      <tr><th rowspan="2">Cơ cấu <small>(ô tick = dùng)</small></th><th colspan="${CC_CHINH.length}" class="cc-gc">MÓN CHÍNH — chọn 1 trong các loại đã tick</th><th colspan="${CC_PHU.length}" class="cc-gp">MÓN PHỤ — mỗi ô tick = 1 món trong bữa</th><th rowspan="2"></th></tr>
+      <tr>${thC}${thP}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="hint" style="margin-top:8px;">Mỗi bữa = cơm + 1 món chính + các món phụ đã tick trong hàng. Muốn "rau xào HOẶC canh" thì tách 2 hàng (vd 1a, 1b). Canh có đạm phải khác loại đạm với món chính; mỗi bữa ≥ 2 loại rau củ. Combo ghép sẵn vẫn được ưu tiên dùng trước.</div>
+    <div class="row" style="margin-top:10px;gap:8px;"><button class="btn secondary sm" id="cc-them">+ Thêm cơ cấu</button><button class="btn sm" id="cc-luu">Lưu cơ cấu</button><button class="btn ghost sm" id="cc-macdinh">Về mặc định</button></div>
   </details>`;
 }
-function ccDocBang(){
-  const o={}; CC_CHINH.forEach(([k])=>{ o[k]={dung:document.querySelector(`.cc-use[data-c="${k}"]`).checked?1:0, phu:[...document.querySelectorAll(`.cc-phu[data-c="${k}"]:checked`)].map(x=>x.dataset.p), so:document.querySelector(`.cc-so[data-c="${k}"]`).value}; });
-  return o;
-}
+function ccDocBang(){ return {rows:ccNhap.rows.map(r=>({ten:r.ten,dung:r.dung?1:0,chinh:r.chinh.slice(),phu:r.phu.slice()}))}; }
 async function ccLuu(cfg){
   const payload={id:CC_ID,bua:"_cfg",ten:"Cơ cấu bữa trưa/tối (cấu hình)",cfg,cap_nhat:new Date().toISOString()};
   const i=state.mon.findIndex(m=>m.id===CC_ID); if(i>=0) state.mon[i]=payload; else state.mon.push(payload);
@@ -12712,15 +12747,20 @@ async function ccLuu(cfg){
 function ccWire(){
   const w=document.getElementById("cc-wrap"); if(!w) return;
   w.addEventListener("toggle",()=>{ ccMo=w.open; });
-  w.querySelectorAll(".cc-use").forEach(cb=>cb.addEventListener("change",()=>{ const k=cb.dataset.c, on=cb.checked;
-    w.querySelectorAll(`.cc-phu[data-c="${k}"],.cc-so[data-c="${k}"]`).forEach(x=>{ x.disabled=!on; }); cb.closest("tr").classList.toggle("cc-off",!on); }));
+  const ve=()=>{ w.outerHTML=ccBangHtml(); ccWire(); };
+  w.querySelectorAll(".cc-x").forEach(cb=>cb.addEventListener("change",()=>{ const r=ccNhap.rows[+cb.dataset.i], arr=r[cb.dataset.g], k=cb.dataset.k;
+    const j=arr.indexOf(k); if(cb.checked&&j<0) arr.push(k); if(!cb.checked&&j>=0) arr.splice(j,1); }));
+  w.querySelectorAll(".cc-use").forEach(cb=>cb.addEventListener("change",()=>{ ccNhap.rows[+cb.dataset.i].dung=cb.checked?1:0; ve(); }));
+  w.querySelectorAll(".cc-tenin").forEach(el=>el.addEventListener("input",()=>{ ccNhap.rows[+el.dataset.i].ten=el.value; }));
+  w.querySelectorAll(".cc-xoa").forEach(b=>b.addEventListener("click",()=>{ ccNhap.rows.splice(+b.dataset.i,1); ve(); }));
+  document.getElementById("cc-them")?.addEventListener("click",()=>{ ccNhap.rows.push({ten:"Cơ cấu "+(ccNhap.rows.length+1),dung:1,chinh:[],phu:[]}); ve(); });
   document.getElementById("cc-luu")?.addEventListener("click",async()=>{
-    const cfg=ccDocBang(); const thieu=CC_CHINH.filter(([k])=>cfg[k].dung && !cfg[k].phu.length).map(([,t])=>t);
-    if(thieu.length){ banner("Chưa tick món phụ cho: "+esc(thieu.join(", ")),"danger"); return; }
-    if(!CC_CHINH.some(([k])=>cfg[k].dung)){ banner("Cần dùng ít nhất 1 loại món chính.","danger"); return; }
-    await ccLuu(cfg); banner("Đã lưu cơ cấu bữa. Lần xây thực đơn tới sẽ ghép món theo bảng này.","info"); render();
+    const cfg=ccDocBang(); const loi=cfg.rows.filter(r=>r.dung&&(!r.chinh.length||!r.phu.length)).map(r=>r.ten||"(chưa đặt tên)");
+    if(loi.length){ banner("Cơ cấu chưa tick đủ món chính và món phụ: "+esc(loi.join(", ")),"danger"); return; }
+    if(!cfg.rows.some(r=>r.dung)){ banner("Cần dùng ít nhất 1 cơ cấu.","danger"); return; }
+    await ccLuu(cfg); ccNhap=null; banner("Đã lưu "+cfg.rows.filter(r=>r.dung).length+" cơ cấu bữa. Lần xây thực đơn tới sẽ ghép món theo bảng này.","info"); render();
   });
-  document.getElementById("cc-macdinh")?.addEventListener("click",async()=>{ await ccLuu(JSON.parse(JSON.stringify(CC_MAC_DINH))); banner("Đã đưa cơ cấu bữa về mặc định (3 cơ cấu đã chốt).","info"); render(); });
+  document.getElementById("cc-macdinh")?.addEventListener("click",async()=>{ await ccLuu({rows:JSON.parse(JSON.stringify(CC_MAC_DINH_ROWS))}); ccNhap=null; banner("Đã đưa cơ cấu bữa về mặc định.","info"); render(); });
 }
 function renderMon(){
   const list=monDanhSachLoc();
@@ -13396,6 +13436,7 @@ document.addEventListener("focusout",e=>{ const el=e.target; if(el && el.tagName
   await initDb();
 })();
 </script>
+
 
 
 
