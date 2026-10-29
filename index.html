@@ -199,7 +199,7 @@ label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--in
 .bn-nk{display:flex;flex-direction:column;gap:10px;}
 @media(max-width:820px){.bn-mt-wrap{grid-template-columns:1fr;}}
 .sel-tim-in{width:100%;max-width:300px;}
-.sel-tim-list{position:fixed;z-index:9999;max-height:260px;overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:4px;font-size:13px;}
+.sel-tim-list{position:fixed;z-index:9999;max-height:260px;overflow-y:auto;overscroll-behavior:contain;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:4px;font-size:13px;}
 .sel-tim-op{padding:6px 10px;border-radius:5px;cursor:pointer;}
 .sel-tim-op:hover,.sel-tim-op.on{background:#e7f2ec;}
 .sel-tim-op.cur{font-weight:700;color:#1f6b4a;}
@@ -9267,7 +9267,7 @@ function switchTab(tab){
    để mã cũ đọc .value và nghe sự kiện change như trước. */
 (function(){
   const bo = s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").replace(/Đ/g,"D").toLowerCase();
-  let openList=null;
+  let openList=null, giuMo=0;   // giuMo: mốc thời gian đang thao tác trong danh sách (kéo thanh cuộn…) — blur lúc này không được đóng
   function dong(){ if(openList){ openList.remove(); openList=null; } }
   function enh(sel){
     if(sel.dataset.tim) return; sel.dataset.tim="1"; sel.style.display="none";
@@ -9291,7 +9291,8 @@ function switchTab(tab){
         items.forEach((o,i)=>{ const d=document.createElement("div"); d.className="sel-tim-op"+(i===act?" on":"")+(o.value===sel.value?" cur":""); d.textContent=o.textContent; d.dataset.v=o.value; box.appendChild(d); });
       };
       build();
-      box.addEventListener("mousedown",e=>{ e.preventDefault(); const d=e.target.closest(".sel-tim-op"); if(!d) return; chon(d.dataset.v); });   // luôn chặn mất focus (kéo thanh cuộn của danh sách không làm đóng)
+      box.addEventListener("mousedown",e=>{ e.preventDefault(); giuMo=Date.now()+1e9; const d=e.target.closest(".sel-tim-op"); if(!d){ const up=()=>{ document.removeEventListener("mouseup",up,true); giuMo=Date.now()+600; if(openList===box) inp.focus({preventScroll:true}); }; document.addEventListener("mouseup",up,true); return; } giuMo=0; chon(d.dataset.v); });
+      box.addEventListener("scroll",()=>{ giuMo=Math.max(giuMo,Date.now()+600); });   // luôn chặn mất focus (kéo thanh cuộn của danh sách không làm đóng)
       document.body.appendChild(box); openList=box; box._build=build;
       const on=box.querySelector(".on"); if(on) on.scrollIntoView({block:"nearest"});
     }
@@ -9300,9 +9301,13 @@ function switchTab(tab){
       if(sel.value!==v){ sel.value=v; sel.dispatchEvent(new Event("change",{bubbles:true})); }
       inp.value=cur(); delete inp.dataset.q; inp.blur();
     }
-    inp.addEventListener("focus",()=>{ inp.select(); delete inp.dataset.q; act=-1; mo(); });
+    inp.addEventListener("focus",()=>{ if(openList && giuMo>Date.now()) return; inp.select(); delete inp.dataset.q; act=-1; mo(); });
     inp.addEventListener("input",()=>{ inp.dataset.q=inp.value; act=0; mo(); });
-    inp.addEventListener("blur",()=>{ setTimeout(()=>{ dong(); inp.value=cur(); delete inp.dataset.q; },120); });
+    inp.addEventListener("blur",()=>{ const xet=()=>{ if(!openList) return; const c=giuMo-Date.now();
+        if(c>5e8){ inp.focus({preventScroll:true}); return; }          // đang giữ chuột trên danh sách (kéo thanh cuộn) → trả tiêu điểm lại
+        if(c>0){ setTimeout(xet,c+20); return; }                        // vừa cuộn trong danh sách → chờ hết rồi mới quyết định
+        if(document.activeElement===inp) return; dong(); inp.value=cur(); delete inp.dataset.q; };
+      setTimeout(xet,120); });
     inp.addEventListener("keydown",e=>{
       if(!openList && (e.key==="ArrowDown"||e.key==="Enter")){ mo(); e.preventDefault(); return; }
       if(!openList) return;
